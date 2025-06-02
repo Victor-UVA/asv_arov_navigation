@@ -1,0 +1,5 @@
+int32 mode
+---
+bool done
+---
+int32 time

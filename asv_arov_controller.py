@@ -5,6 +5,7 @@ import math
 import numpy as np
 from rclpy.node import Node
 from rclpy.action import ActionServer
+from rclpy.action import ActionClient
 
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Pose
@@ -13,15 +14,31 @@ from package.actions import ControlModeAction
 from tf_transformations import euler_from_quaternion
 from tf_transformations import quaternion_from_euler
 
-class StateMachineController(Node) :
+class CleanerActionClient(Node) :
 
     def __init__(self) :
-        super().__init__('state_machine_controller')
+        super().__init__('cleaner_action_client')
+        self.action_client = ActionClient(self, PlaceholderAction, 'cleaner_action_server')
+
+    def send_goal(self, request) :
+        goal_msg = PlaceholderAction.Goal()
+        goal_msg.request = request
+
+        self.action_client.wait_for_server()
+
+        return self.action_client.send_goal_async(goal_msg)
+        
+
+class ControllerActionServer(Node) :
+
+    def __init__(self) :
+        super().__init__('controller_action_server')
         self.arov_pose_subscriber = self.create_subscription(PoseStamped, 'topic', self.arov_pose_callback, 10)
         self.asv_pose_subscriber = self.create_subsrciption(PoseStamped, 'topic', self.asv_pose_callback, 10)
         self.arov_target_pose_publisher = self.create_publisher(PoseStamped, 'arov_target_pose', 1)
         self.asv_target_pose_publisher = self.create_publisher(PoseStamped, 'asv_target_pose', 1)
         self.action_server = ActionServer(self, ControlModeAction, 'asv_arov_controller', self.execute_callback)
+        # self.action_client = CleanerActionClient()
 
         self.arov_pose = None
         self.arov_follow_clearance = 1 # minimum distance from ASV in meters
@@ -77,7 +94,8 @@ class StateMachineController(Node) :
                 y_error = self.asv_target_poses[self.asv_target_pose_id].position.y - self.asv_pose.pose.position.y
                 r_error = np.linalg.norm(np.array([x_error, y_error], dtype=np.float64))
                 if r_error < self.asv_target_clearance :
-                    # TODO: Add service/action call to Ivana's cleaning code, do not continue until done
+                    # future = self.action_client.send_goal()
+                    # rclpy.spin_until_future_complete(self.action_client, future)
                     self.asv_target_pose_id = (self.asv_target_pose_id + 1) % len(self.asv_target_poses)
 
                 asv_target_pose = PoseStamped()
@@ -93,8 +111,8 @@ class StateMachineController(Node) :
 
 def main(args=None) :
     rclpy.init(args=args)
-    state_machine = StateMachineController()
-    rclpy.spin(state_machine)
+    controller_action_server = ControllerActionServer()
+    rclpy.spin(controller_action_server)
 
 if __name__ == 'main' :
     main()

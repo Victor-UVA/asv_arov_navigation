@@ -69,7 +69,7 @@ class ControllerActionServer(Node) :
             xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
                 
             arov_orientation = self.arov_pose.pose.orientation
-            (arov_roll, arov_pitch, arov_yaw) = euler_from_quaternion(arov_orientation.x, arov_orientation.y, arov_orientation.z, arov_orientation.w)
+            (arov_roll, arov_pitch, arov_yaw) = euler_from_quaternion([arov_orientation.w, arov_orientation.x, arov_orientation.y, arov_orientation.z])
             # Set roll here if desired
             # Set pitch here if desired
             arov_yaw = math.atan2(-y_transform, -x_transform)

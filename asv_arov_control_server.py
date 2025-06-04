@@ -54,7 +54,7 @@ class ControlActionServer(Node) :
         super().__init__('control_action_server')
         self.cleaner_action_client = CleanerActionClient()
         self.navigator_action_client = NavigatorActionClient()
-        self.action_server = ActionServer(self, ControlModeAction, 'control_action_server', self.execute_callback)
+        self.action_server = ActionServer(self, ControlModeAction, 'control_action_server', self.execute_callback_async)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)

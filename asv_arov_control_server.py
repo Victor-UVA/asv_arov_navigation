@@ -1,12 +1,10 @@
 import rclpy
-import math
-import numpy as np
+from enum import Enum
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 
 from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Pose
 from package.actions import ControlModeAction
 from package.actions import CleaningAction
 from package.actions import NavigationAction
@@ -45,6 +43,11 @@ class NavigatorActionClient(Node) :
 
         return self.action_client.send_goal_async(goal_msg)
     
+class ControlState(Enum) :
+    STARTING = 0
+    CLEANING = 1
+    NAVIGATING = 2
+    
 class ControlActionServer(Node) :
 
     def __init__(self) :
@@ -60,32 +63,61 @@ class ControlActionServer(Node) :
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
 
-    def execute_callback(self, goal_handle) :
-        if self.asv_home_pose is None :
-            try :
-                t = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
-                self.asv_home_pose = PoseStamped()
-                self.asv_home_pose.header = t.header
-                self.asv_home_pose.pose.position.x = t.transform.translation.x
-                self.asv_home_pose.pose.position.y = t.transform.translation.y
-                self.asv_home_pose.pose.position.z = t.transform.translation.z
-                self.asv_home_pose.pose.orientation = t.transform.orientation
-            except TransformException as ex :
-                self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
-        if goal_handle.request.mode == 1 :
+        self.state = ControlState.STARTING
+        self.cleaner_future = None
+        self.cleaner_check = False
+        self.navigator_future = None
+        self.navigator_check = False
+        
+    def execute_callback_async(self, goal_handle) :
+        if goal_handle.mode == 1 :
             while True :
-                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
-                    self.asv_target_pose_id == 0
-                target = self.asv_target_poses[self.asv_target_pose_id]
-                target.header.stamp = rclpy.time.Time()
-                future = self.navigator_action_client.send_goal(target, 1)
-                rclpy.spin_until_future_complete(self.navigator_action_client, future)
-                if future.goal_reached :
-                    self.asv_target_pose_id += 1
-                    future = self.cleaner_action_client.send_goal(None)
-                    rclpy.spin_until_future_complete(self.cleaner_action_client, future)
-        elif goal_handle.request.mode == 0 and self.asv_home_pose is not None :
+                if self.state == ControlState.STARTING :
+                    if self.asv_home_pose is None :
+                        t = None
+                        try :
+                            t = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
+                        except TransformException as ex :
+                            self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
+                        if t is not None :
+                            self.asv_home_pose = PoseStamped()
+                            self.asv_home_pose.header = t.header
+                            self.asv_home_pose.pose.position.x = t.transform.translation.x
+                            self.asv_home_pose.pose.position.y = t.transform.translation.y
+                            self.asv_home_pose.pose.position.z = t.transform.translation.z
+                            self.asv_home_pose.pose.orientation = t.transform.orientation
+                            self.state = ControlState.NAVIGATING
+                elif self.state == ControlState.CLEANING :
+                    if not self.cleaner_check :
+                        self.cleaner_check = True
+                        self.cleaner_future = self.cleaner_action_client.send_goal(None)
+                        rclpy.spin_until_future_complete(self.cleaner_action_client, self.cleaner_future)
+                    elif self.cleaner_future is not None and self.cleaner_future.goal_reached :
+                        self.cleaner_check = False
+                        self.state = ControlState.NAVIGATING
+                elif self.state == ControlState.NAVIGATING :
+                    if not self.navigator_check :
+                        self.navigator_check = True
+                        if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
+                            self.asv_target_pose_id == 0
+                        target = self.asv_target_poses[self.asv_target_pose_id]
+                        target.header.stamp = rclpy.time.Time()
+                        future = self.navigator_action_client.send_goal(target, 1)
+                        rclpy.spin_until_future_complete(self.navigator_action_client, future)
+                    elif self.navigator_future is not None and self.navigator_future.goal_reached :
+                        self.navigator_check = False
+                        self.asv_target_pose_id += 1
+                        self.state = ControlState.CLEANING
+        elif goal_handle.mode == 0 :
             self.asv_home_pose.header.stamp = rclpy.time.Time()
             future = self.navigator_action_client.send_goal(self.asv_home_pose, 1)
             rclpy.spin_until_future_complete(self.navigator_action_client, future)
-            return future.goal_reached
+            return True
+
+def main(args=None) :
+    rclpy.init(args)
+    action_server = ControlActionServer()
+    rclpy.spin(action_server)
+
+if __name__ == '__main__' :
+    main()

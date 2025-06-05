@@ -4,9 +4,9 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 
-from asv_arov_interfaces.actions import ControlModeAction
-from asv_arov_interfaces.actions import CleaningAction
-from asv_arov_interfaces.actions import NavigationAction
+from asv_arov_interfaces.action import ControlModeAction
+from asv_arov_interfaces.action import CleaningAction
+from asv_arov_interfaces.action import NavigationAction
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -113,7 +113,7 @@ class ControlActionServer(Node) :
             return True
 
 def main(args=None) :
-    rclpy.init(args)
+    rclpy.init()
     action_server = ControlActionServer()
     rclpy.spin(action_server)
 

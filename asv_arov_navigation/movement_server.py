@@ -6,10 +6,10 @@ import numpy as np
 import threading
 import time
 
-from rlcpy.duration import Duration
+from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from asv_arov_interfaces.actions import NavigationAction
+from asv_arov_interfaces.action import NavigationAction
 
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 
@@ -95,7 +95,7 @@ class NavigationActionServer(Node):
             
         target_pose = PoseStamped()
         target_pose.header.frame = "map"
-        target_pose.header.stamp = rlcpy.time.Time()
+        target_pose.header.stamp = rclpy.time.Time()
         target_pose.pose.position.x = target_array[0]
         target_pose.pose.position.y = target_array[1]
         target_pose.pose.position.z = initial_pose.pose.position.z
@@ -151,9 +151,9 @@ class NavigationActionServer(Node):
         return target_pose
 
 def main() -> None:
-    rlcpy.init()
+    rclpy.init()
     move_server = NavigationActionServer()
-    rlcpy.spin(move_server)
+    rclpy.spin(move_server)
 
 if __name__ == '__main__':
     main()

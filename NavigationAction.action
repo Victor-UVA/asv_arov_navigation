@@ -1,6 +1,0 @@
-PoseStamped goal
-int32 mode
----
-bool goal_reached
----
-PoseStamped current_pose

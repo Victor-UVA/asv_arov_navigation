@@ -1,17 +1,22 @@
-import rlcpy
-from rlcpy.duration import Duration
-from rlcpy.node import Node
+import rclpy
+from rclpy.duration import Duration
+from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from std_msgs.msg import Bool, Float32
-
+from ament_index_python.packages import get_package_share_directory
+import os
 
 def main() -> None:
-    rlcpy.init()
+    rclpy.init()
+    nav = BasicNavigator()
+
+    costmap = os.path.join(get_package_share_directory('asv_arov_navigation'), 'config', 'arov_costmap_params.yaml')
+    nav.changeMap(costmap)
 
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = "map"
-    initial_pose.header.stamp = self.get_clock().now()
+    initial_pose.header.stamp = nav.get_clock().now().to_msg()
     initial_pose.pose.position.x = 0.0
     initial_pose.pose.position.y = 0.0
     initial_pose.pose.position.z = 0.0
@@ -22,16 +27,15 @@ def main() -> None:
 
     goal_pose = PoseStamped()
     goal_pose.header.frame_id = "map"
-    goal_pose.header.stamp = self.get_clock().now()
-    goal_pose.pose.position.x = 10.0
-    goal_pose.pose.position.y = 0.0
+    goal_pose.header.stamp = nav.get_clock().now().to_msg()
+    goal_pose.pose.position.x = 0.0
+    goal_pose.pose.position.y = -3.0
     goal_pose.pose.position.z = 0.0
     goal_pose.pose.orientation.x = 0.0
     goal_pose.pose.orientation.y = 0.0
     goal_pose.pose.orientation.z = 0.0
     goal_pose.pose.orientation.w = 1.0
 
-    nav = BasicNavigator('arov/base_link')
     nav.setInitialPose(initial_pose)
     nav.waitUntilNav2Active()
     goto_task = nav.goToPose(goal_pose)

@@ -36,49 +36,52 @@ class NavigationActionServer(Node):
         self.leader_nav = None
         self.follower_nav = None
         self.follow_clearance = 1
+        self.lead_task = None
+        self.follow_task = None
 
     def navigation_callback(self, msg):
         if msg.mode == 0:   # stop all tasks, stand still
+            self.leader_nav.cancelTask()
+            self.follower_nav.cancelTask()
 
         elif (msg.mode == 1) or (msg.mode == 2):
             asv_transform = None
             arov_transform = None
-            while statement == True:
-                try:
-                    asv_transform = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
-                    self.asv_current_pose = PoseStamped()
-                    self.asv_current_pose.header = asv_transform.header
-                    self.asv_current_pose.pose.position.x = asv_transform.transform.translation.x
-                    self.asv_current_pose.pose.position.y = asv_transform.transform.translation.y
-                    self.asv_current_pose.pose.position.z = asv_transform.transform.translation.z
-                    self.asv_current_pose.pose.orientation = asv_transform.transform.rotation
-                except TransformException as asv_ex:
-                    self.get_logger().info(f'Could not get ASV pose as transform: {asv_ex}')
-                try:
-                    arov_transform = self.tf_buffer.lookup_transform('arov', 'map', rclpy.time.Time())
-                    self.arov_current_pose = PoseStamped()
-                    self.arov_current_pose.header = arov_transform.header
-                    self.arov_current_pose.pose.position.x = arov_transform.transform.translation.x
-                    self.arov_current_pose.pose.position.y = arov_transform.transform.translation.y
-                    self.arov_current_pose.pose.position.z = arov_transform.transform.translation.z
-                    self.arov_current_pose.pose.orientation = arov_transform.transform.rotation
-                except TransformException as arov_ex:
-                    self.get_logger().info(f'Could not get AROV pose as transform: {arov_ex}')
+            try:
+                asv_transform = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
+                self.asv_current_pose = PoseStamped()
+                self.asv_current_pose.header = asv_transform.header
+                self.asv_current_pose.pose.position.x = asv_transform.transform.translation.x
+                self.asv_current_pose.pose.position.y = asv_transform.transform.translation.y
+                self.asv_current_pose.pose.position.z = asv_transform.transform.translation.z
+                self.asv_current_pose.pose.orientation = asv_transform.transform.rotation
+            except TransformException as asv_ex:
+                self.get_logger().info(f'Could not get ASV pose as transform: {asv_ex}')
+            try:
+                arov_transform = self.tf_buffer.lookup_transform('arov', 'map', rclpy.time.Time())
+                self.arov_current_pose = PoseStamped()
+                self.arov_current_pose.header = arov_transform.header
+                self.arov_current_pose.pose.position.x = arov_transform.transform.translation.x
+                self.arov_current_pose.pose.position.y = arov_transform.transform.translation.y
+                self.arov_current_pose.pose.position.z = arov_transform.transform.translation.z
+                self.arov_current_pose.pose.orientation = arov_transform.transform.rotation
+            except TransformException as arov_ex:
+                self.get_logger().info(f'Could not get AROV pose as transform: {arov_ex}')
 
-                if msg.mode == 0:   # ASV leads
-                    thread1 = threading.Thread(target = self._move_to_target(0, self.asv_current_pose, msg.goal))
-                    thread2 = threading.Thread(target = self._follow_target(1, self.arov_current_pose))
-                    thread1.start()
-                    thread2.start()
-                    thread1.join()
-                    thread2.join()
-                if msg.mode == 1:   # AROV leads
-                    thread1 = threading.Thread(target = self._move_to_target(1, self.arov_current_pose, msg.goal))
-                    thread2 = threading.Thread(target = self._follow_target(0, self.asv_current_pose))
-                    thread1.start()
-                    thread2.start()
-                    thread1.join()
-                    thread2.join()
+            if msg.mode == 0:   # ASV leads
+                thread1 = threading.Thread(target = self._move_to_target(0, self.asv_current_pose, msg.goal))
+                thread2 = threading.Thread(target = self._follow_target(1, self.arov_current_pose))
+                thread1.start()
+                thread2.start()
+                thread1.join()
+                thread2.join()
+            if msg.mode == 1:   # AROV leads
+                thread1 = threading.Thread(target = self._move_to_target(1, self.arov_current_pose, msg.goal))
+                thread2 = threading.Thread(target = self._follow_target(0, self.asv_current_pose))
+                thread1.start()
+                thread2.start()
+                thread1.join()
+                thread2.join()
 
     def _move_to_target(self, mode, initial_pose, target_pose):
         if mode == 0:   # asv lead
@@ -90,12 +93,13 @@ class NavigationActionServer(Node):
 
         self.leader_nav.setInitialPose(initial_pose)
         self.leader_nav.waitUntilNav2Active()
-        goto_task = self.leader_nav.goToPose(target_pose)
+        self.lead_task = self.leader_nav.goToPose(target_pose)
 
         self.leader_running = True
-        while not self.leader_nav.isTaskComplete(task = goto_task) and self.leader_running:
-            self.leader_pose = self.leader_nav.getFeedback(task = goto_task).current_pose
+        while not self.leader_nav.isTaskComplete(task = self.lead_task) and self.leader_running:
+            self.leader_pose = self.leader_nav.getFeedback(task = self.lead_task).current_pose
         self.leader_running = False
+        self.leader_nav.lifecycleShutdown()
 
     def _follow_target(self, mode, initial_pose):
         if mode == 0:   # arov follow asv
@@ -109,8 +113,9 @@ class NavigationActionServer(Node):
         self.follower_nav.waitUntilNav2Active()
         while self.leader_running:
             target_pose = self._calculate_pose(self.follower_pose, self.leader_pose)
-            self.follower_nav.goToPose(target_pose)
+            self.follow_task = self.follower_nav.goToPose(target_pose)
             time.sleep(1)
+        self.follower_nav.lifecycleShutdown()
 
     def _calculate_pose(self, follow_pose, lead_pose):
         x_transform = follow_pose.pose.position.x - lead_pose.pose.position.x
@@ -138,7 +143,6 @@ def main() -> None:
     rlcpy.init()
     move_server = NavigationActionServer()
     rlcpy.spin(move_server)
-    nav.lifecycleShutdown()
 
 if __name__ == '__main__':
     main()

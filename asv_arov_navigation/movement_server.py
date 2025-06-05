@@ -9,7 +9,7 @@ import time
 from rlcpy.duration import Duration
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from package.actions import NavigationAction
+from asv_arov_interfaces.actions import NavigationAction
 
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 
@@ -24,8 +24,8 @@ from std_msgs.msg import Bool, Float32, Int32
 
 class NavigationActionServer(Node):
     def __init__(self):
-        super().__init__('Navigation_action_server')
-        self.action_server = ActionServer(self, NavigationAction, 'Navigation_action_server', self.navigation_callback)
+        super().__init__('navigation_action_server')
+        self.action_server = ActionServer(self, NavigationAction, 'navigation_action_server', self.navigation_callback)
         self.arov_current_pose = None
         self.asv_current_pose = None
         self.l_task = None
@@ -38,6 +38,8 @@ class NavigationActionServer(Node):
         self.follow_clearance = 1
         self.lead_task = None
         self.follow_task = None
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
     def navigation_callback(self, msg):
         if msg.mode == 0:   # stop all tasks, stand still

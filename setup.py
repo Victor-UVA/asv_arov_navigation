@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+from glob import glob
+import os
 
 package_name = 'asv_arov_navigation'
 
@@ -10,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'config'), glob('config/*'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,6 +23,11 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'arov_nav_test = asv_arov_navigation.arov_nav_test:main',
+            'arov_nav = asv_arov_navigation.arov_nav:main',
+            'asv_arov_control_server = asv_arov_navigation.asv_arov_control_server:main',
+            'asv_nav = asv_arov_navigation.asv_nav:main',
+            'movement_server = asv_arov_navigation.movement_server:main',
         ],
     },
 )

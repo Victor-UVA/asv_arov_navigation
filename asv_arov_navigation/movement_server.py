@@ -85,13 +85,22 @@ class NavigationActionServer(Node):
                 thread1.join()
                 thread2.join()
 
-    def _move_to_target(self, mode, initial_pose, target_pose):
+    def _move_to_target(self, mode, initial_pose, target_array):
         if mode == 0:   # asv lead
             self.leader_nav = BasicNavigator("asv")
             self.leader_nav.changeMap("/path/to/asv_costmap_params.yaml")
         else:   # arov lead
             self.leader_nav = BasicNavigator("arov")
             self.leader_nav.changeMap("/path/to/arov_costmap_params.yaml")
+            
+        target_pose = PoseStamped()
+        target_pose.header.frame = "map"
+        target_pose.header.stamp = rlcpy.time.Time()
+        target_pose.pose.position.x = target_array[0]
+        target_pose.pose.position.y = target_array[1]
+        target_pose.pose.position.z = initial_pose.pose.position.z
+        target_pose.pose.orientation = quaternion_from_euler(0, 0, target_array[2])
+        
 
         self.leader_nav.setInitialPose(initial_pose)
         self.leader_nav.waitUntilNav2Active()

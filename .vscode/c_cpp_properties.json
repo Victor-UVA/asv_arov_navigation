@@ -1,0 +1,27 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/maddy/ros2_ws/install/gscam2/include/**",
+        "/home/maddy/ros2_ws/install/ros2_shared/include/**",
+        "/home/maddy/ros2_ws/install/bluerov_interfaces/include/**",
+        "/home/maddy/ros2_ws/install/asv_arov_interfaces/include/**",
+        "/opt/ros/jazzy/include/**",
+        "/home/maddy/ros2_ws/src/aquaculture/include/**",
+        "/home/maddy/ros2_ws/src/gscam2/include/**",
+        "/home/maddy/ros2_ws/src/ros2_shared/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

@@ -4,7 +4,6 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 
-from geometry_msgs.msg import PoseStamped
 from asv_arov_interfaces.actions import ControlModeAction
 from asv_arov_interfaces.actions import CleaningAction
 from asv_arov_interfaces.actions import NavigationAction
@@ -12,6 +11,8 @@ from asv_arov_interfaces.actions import NavigationAction
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+
+from tf_transformations import euler_from_quaternion, quaternion_from_euler
 
 class CleaningActionClient(Node) :
 
@@ -52,7 +53,7 @@ class ControlActionServer(Node) :
 
     def __init__(self) :
         super().__init__('control_action_server')
-        self.cleaning_action_client = CleaningActionClient()
+        # self.cleaning_action_client = CleaningActionClient()
         self.navigation_action_client = NavigationActionClient()
         self.action_server = ActionServer(self, ControlModeAction, 'control_action_server', self.execute_callback_async)
 
@@ -80,29 +81,26 @@ class ControlActionServer(Node) :
                         except TransformException as ex :
                             self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                         if t is not None :
-                            self.asv_home_pose = PoseStamped()
-                            self.asv_home_pose.header = t.header
-                            self.asv_home_pose.pose.position.x = t.transform.translation.x
-                            self.asv_home_pose.pose.position.y = t.transform.translation.y
-                            self.asv_home_pose.pose.position.z = t.transform.translation.z
-                            self.asv_home_pose.pose.orientation = t.transform.orientation
+                            self.asv_home_pose = [0, 0, 0]
+                            self.asv_home_pose[0] = t.transform.translation.x
+                            self.asv_home_pose[1] = t.transform.translation.y
+                            (roll, yaw, pitch) = euler_from_quaternion([t.transform.orientation.x, t.transform.orientation.y, t.transform.orientation.z, t.transform.orientation.w])
+                            self.asv_home_pose[2] = yaw
                             self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.CLEANING :
-                    if not self.cleaning_check :
-                        self.cleaning_check = True
-                        self.cleaning_future = self.cleaning_action_client.send_goal(None)
-                        rclpy.spin_until_future_complete(self.cleaning_action_client, self.cleaning_future)
-                    elif self.cleaning_future is not None and self.cleaning_future.goal_reached :
-                        self.cleaning_check = False
+                    # if not self.cleaning_check :
+                    #     self.cleaning_check = True
+                    #     self.cleaning_future = self.cleaning_action_client.send_goal(None)
+                    #     rclpy.spin_until_future_complete(self.cleaning_action_client, self.cleaning_future)
+                    # elif self.cleaning_future is not None and self.cleaning_future.goal_reached :
+                    #     self.cleaning_check = False
                         self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.NAVIGATING :
                     if not self.navigation_check :
                         self.navigation_check = True
                         if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                             self.asv_target_pose_id == 0
-                        target = self.asv_target_poses[self.asv_target_pose_id]
-                        target.header.stamp = rclpy.time.Time()
-                        future = self.navigation_action_client.send_goal(target, 1)
+                        future = self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
                         rclpy.spin_until_future_complete(self.navigation_action_client, future)
                     elif self.navigation_future is not None and self.navigation_future.goal_reached :
                         self.navigation_check = False

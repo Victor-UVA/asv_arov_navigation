@@ -32,7 +32,7 @@
 
     <!-- Thrusters -->
     <xacro:macro name="thruster" params="id x_reflect y_reflect">
-        <link name="%{prefix}_link">
+        <link name="${prefix}_link">
             <visual>
                 <origin xyz="0.0 0.0 0.0" rpy="${pi/2} 0 0"/>
                 <geometry>

@@ -3,7 +3,7 @@ from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, FindExecutable
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
+from launch_ros.substitutions import FindPackageShare, PythonExpression
 from launch.conditions import IfCondition
 
 import os
@@ -75,12 +75,6 @@ def generate_launch_description():
             executable='robot_state_publisher',
             parameters=[{'robot_description': arov_description}]
         ),
-        Node(
-            namespace='asv',
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            parameters=[{'robot_description': asv_description}]
-        ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 PathJoinSubstitution(
@@ -105,7 +99,8 @@ def generate_launch_description():
                 'use_localization': 'false',
                 'use_keepout_zones': 'false',
                 'use_speed_zones': 'false'
-            }.items()
+            }.items(),
+            remappings=[('/cmd_vel'), ('/arov/cmd_vel')]
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -131,6 +126,7 @@ def generate_launch_description():
                 'use_localization': 'false',
                 'use_keepout_zones': 'false',
                 'use_speed_zones': 'false'
-            }.items()
+            }.items(),
+            remappings=[('/cmd_vel'), ('/asv/cmd_vel')]
         )
     ])

@@ -47,7 +47,7 @@
         <joint name="arov/thruster_${id}" type="continuous">
             <parent link="arov/base_link"/>
             <child link="arov/thruster_${id}_link"/>
-            <origin xyz="${x_reflext*thrust_xoff} ${y_reflect*thrust_yoff} ${thrust_zoff}" rpy="0 0 ${-x_reflect*y_reflect*pi/4}"/>
+            <origin xyz="${x_reflect*thrust_xoff} ${y_reflect*thrust_yoff} ${thrust_zoff}" rpy="0 0 ${-x_reflect*y_reflect*pi/4}"/>
             <axis xyz="1 1 0"/>
         </joint>
     </xacro:macro>

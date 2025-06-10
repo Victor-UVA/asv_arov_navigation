@@ -8,7 +8,7 @@ import time
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from package.actions import NavigationAction
+from asv_arov_interfaces.action import NavigationAction
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer

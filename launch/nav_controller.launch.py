@@ -77,12 +77,11 @@ def generate_launch_description():
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    FindPackageShare('navigation2'),
-                    'nav2_bringup',
+                PathJoinSubstitution([
+                    FindPackageShare('nav2_bringup'),
                     'launch',
                     'navigation_launch.py'
-                )
+                ])
             ),
             launch_arguments={
                 'namespace': 'arov',
@@ -92,24 +91,23 @@ def generate_launch_description():
                 # 'speed_mask': '',
                 'use_sim_time': 'false',
                 'params_file': arov_params,
-                'autostart': 'true',
-                'use_composition': 'true',
+                'autostart': 'True',
+                'use_composition': 'True',
                 'use_respawn': 'false',
                 'log_level': '0',
                 'use_localization': 'false',
                 'use_keepout_zones': 'false',
                 'use_speed_zones': 'false'
             }.items(),
-            remappings=[('/cmd_vel'), ('/arov/cmd_vel')]
+            #remappings=[('/cmd_vel'), ('/arov/cmd_vel')]
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    FindPackageShare('navigation2'),
-                    'nav2_bringup',
+                PathJoinSubstitution([
+                    FindPackageShare('nav2_bringup'),
                     'launch',
                     'navigation_launch.py'
-                )
+                ])
             ),
             launch_arguments={
                 'namespace': 'asv',
@@ -119,14 +117,14 @@ def generate_launch_description():
                 # 'speed_mask': '',
                 'use_sim_time': 'false',
                 'params_file': asv_params,
-                'autostart': 'true',
-                'use_composition': 'true',
+                'autostart': 'True',
+                'use_composition': 'True',
                 'use_respawn': 'false',
                 'log_level': '0',
                 'use_localization': 'false',
                 'use_keepout_zones': 'false',
                 'use_speed_zones': 'false'
             }.items(),
-            remappings=[('/cmd_vel'), ('/asv/cmd_vel')]
+            #remappings=[('/cmd_vel'), ('/asv/cmd_vel')]
         )
     ])

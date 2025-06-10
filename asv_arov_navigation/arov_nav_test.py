@@ -12,7 +12,7 @@ def main() -> None:
     nav = BasicNavigator()
 
     costmap = os.path.join(get_package_share_directory('asv_arov_navigation'), 'config', 'arov_costmap_params.yaml')
-    nav.changeMap(costmap)
+    #nav.changeMap(costmap)
 
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = "map"

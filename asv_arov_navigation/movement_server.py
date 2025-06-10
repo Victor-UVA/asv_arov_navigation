@@ -14,17 +14,17 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import PoseStamped
-from tf_transformations import euler_from_quaternion, quaternion_from_euler
+from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Float32, Int32
 
 
 class NavigationActionServer(Node):
     def __init__(self):
-        super().__init__('Navigation_action_server')
-        self.action_server = ActionServer(self, NavigationAction, 'Navigation_action_server', self.navigation_callback)
+        super().__init__('navigation_action_server')
+        self.action_server = ActionServer(self, NavigationAction, 'navigation_action_server', self.navigation_callback)
 
-        self.arov_nav = BasicNavigator()
-        self.asv_nav = BasicNavigator()
+        self.arov_nav = BasicNavigator("arov")
+        self.asv_nav = BasicNavigator("asv")
         self.leader_task = None
         self.follower_task = None
 
@@ -54,7 +54,11 @@ class NavigationActionServer(Node):
             leader_target_pose.pose.position.x = msg.goal[0]
             leader_target_pose.pose.position.y = msg.goal[1]
             leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
-            leader_target_pose.pose.orientation = quaternion_from_euler(0, 0, msg.goal[2])
+            orientation = Rotation.from_euler("xyz", [0, 0, msg_goal[2]], degrees=False).as_quat()
+            leader_target_pose.pose.orientation.x = orientation[0]
+            leader_target_pose.pose.orientation.y = orientation[1]
+            leader_target_pose.pose.orientation.z = orientation[2]
+            leader_target_pose.pose.orientation.w = orientation[3]
 
             leader_nav.setInitialPose(leader_initial_pose)
             follower_nav.setInitialPose(follower_initial_pose)
@@ -94,9 +98,9 @@ class NavigationActionServer(Node):
         y_transform = follower_pose.pose.position.y - leader_pose.pose.position.y
         xy_transform = np.array([x_transform, y_transform], dtype=np.float64)
         xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
-        (follow_roll, follow_pitch, _) = euler_from_quaternion(follower_pose.pose.orientation)
+        follow_orientation = Rotation.from_quat(follower_pose.pose.orientation).as_euler("xyz", degrees=False)
         target_yaw = math.atan2(-y_transform, -x_transform)
-        target_orientation = quaternion_from_euler(follow_roll, follow_pitch, target_yaw)
+        target_orientation = Rotation.from_euler("xyz", [target_orientation[0], target_orientation[1], target_yaw], degrees=False).as_quat()
 
         target_pose = PoseStamped()
         target_pose.header.frame_id = "map"

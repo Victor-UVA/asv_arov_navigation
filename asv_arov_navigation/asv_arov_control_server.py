@@ -12,7 +12,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from tf_transformations import euler_from_quaternion, quaternion_from_euler
+from scipy.spatial.transform import Rotation
 
 class CleaningActionClient(Node) :
 
@@ -84,8 +84,8 @@ class ControlActionServer(Node) :
                             self.asv_home_pose = [0, 0, 0]
                             self.asv_home_pose[0] = t.transform.translation.x
                             self.asv_home_pose[1] = t.transform.translation.y
-                            (roll, yaw, pitch) = euler_from_quaternion([t.transform.orientation.x, t.transform.orientation.y, t.transform.orientation.z, t.transform.orientation.w])
-                            self.asv_home_pose[2] = yaw
+                            rpy = Rotation.from_quat([t.transform.orientation.x, t.transform.orientation.y, t.transform.orientation.z, t.transform.orientation.w]).as_euler("xyz", degrees=False)
+                            self.asv_home_pose[2] = rpy[2]
                             self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.CLEANING :
                     # if not self.cleaning_check :

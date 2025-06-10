@@ -3,20 +3,16 @@
 import rclpy
 import math
 import numpy as np
-import threading
 import time
 
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from asv_arov_interfaces.action import NavigationAction
-
+from package.actions import NavigationAction
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-
 from geometry_msgs.msg import PoseStamped
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 from std_msgs.msg import Bool, Float32, Int32
@@ -24,125 +20,90 @@ from std_msgs.msg import Bool, Float32, Int32
 
 class NavigationActionServer(Node):
     def __init__(self):
-        super().__init__('navigation_action_server')
-        self.action_server = ActionServer(self, NavigationAction, 'navigation_action_server', self.navigation_callback)
-        self.arov_current_pose = None
-        self.asv_current_pose = None
-        self.l_task = None
-        self.f_task = None
-        self.leader_running = False
-        self.leader_pose = None
-        self.follower_pose = None
-        self.leader_nav = None
-        self.follower_nav = None
-        self.follow_clearance = 1
-        self.lead_task = None
-        self.follow_task = None
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        super().__init__('Navigation_action_server')
+        self.action_server = ActionServer(self, NavigationAction, 'Navigation_action_server', self.navigation_callback)
+
+        self.arov_nav = BasicNavigator()
+        self.asv_nav = BasicNavigator()
+        self.leader_task = None
+        self.follower_task = None
 
     def navigation_callback(self, msg):
-        if msg.mode == 0:   # stop all tasks, stand still
-            self.leader_nav.cancelTask()
-            self.follower_nav.cancelTask()
+        if msg.mode == 0:   # stop all tasks
+            self.arov_nav.cancelTask()
+            self.asv_nav.cancelTask()
 
         elif (msg.mode == 1) or (msg.mode == 2):
-            asv_transform = None
-            arov_transform = None
-            try:
-                asv_transform = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
-                self.asv_current_pose = PoseStamped()
-                self.asv_current_pose.header = asv_transform.header
-                self.asv_current_pose.pose.position.x = asv_transform.transform.translation.x
-                self.asv_current_pose.pose.position.y = asv_transform.transform.translation.y
-                self.asv_current_pose.pose.position.z = asv_transform.transform.translation.z
-                self.asv_current_pose.pose.orientation = asv_transform.transform.rotation
-            except TransformException as asv_ex:
-                self.get_logger().info(f'Could not get ASV pose as transform: {asv_ex}')
-            try:
-                arov_transform = self.tf_buffer.lookup_transform('arov', 'map', rclpy.time.Time())
-                self.arov_current_pose = PoseStamped()
-                self.arov_current_pose.header = arov_transform.header
-                self.arov_current_pose.pose.position.x = arov_transform.transform.translation.x
-                self.arov_current_pose.pose.position.y = arov_transform.transform.translation.y
-                self.arov_current_pose.pose.position.z = arov_transform.transform.translation.z
-                self.arov_current_pose.pose.orientation = arov_transform.transform.rotation
-            except TransformException as arov_ex:
-                self.get_logger().info(f'Could not get AROV pose as transform: {arov_ex}')
+            if msg.mode == 1:   # ASV leads, AROV follows
+                leader_nav = self.asv_nav
+                follower_nav = self.arov_nav
+                leader_initial_pose = self._get_initial_pose('asv')
+                follower_initial_pose = self._get_initial_pose('arov')
+            else:   # AROV leads, ASV follows
+                leader_nav = self.arov_nav
+                follower_nav = self.asv_nav
+                leader_initial_pose = self._get_initial_pose('arov')
+                follower_initial_pose = self._get_initial_pose('asv')
 
-            if msg.mode == 0:   # ASV leads
-                thread1 = threading.Thread(target = self._move_to_target(0, self.asv_current_pose, msg.goal))
-                thread2 = threading.Thread(target = self._follow_target(1, self.arov_current_pose))
-                thread1.start()
-                thread2.start()
-                thread1.join()
-                thread2.join()
-            if msg.mode == 1:   # AROV leads
-                thread1 = threading.Thread(target = self._move_to_target(1, self.arov_current_pose, msg.goal))
-                thread2 = threading.Thread(target = self._follow_target(0, self.asv_current_pose))
-                thread1.start()
-                thread2.start()
-                thread1.join()
-                thread2.join()
+            leader_current_pose = None
+            follower_current_pose = None
+            follower_running = False
+            leader_target_pose = PoseStamped()
+            leader_target_pose.header.frame_id = "map"
+            leader_target_pose.header.stamp = rclpy.time.Time()
+            leader_target_pose.pose.position.x = msg.goal[0]
+            leader_target_pose.pose.position.y = msg.goal[1]
+            leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
+            leader_target_pose.pose.orientation = quaternion_from_euler(0, 0, msg.goal[2])
 
-    def _move_to_target(self, mode, initial_pose, target_array):
-        if mode == 0:   # asv lead
-            self.leader_nav = BasicNavigator("asv")
-            self.leader_nav.changeMap("/path/to/asv_costmap_params.yaml")
-        else:   # arov lead
-            self.leader_nav = BasicNavigator("arov")
-            self.leader_nav.changeMap("/path/to/arov_costmap_params.yaml")
-            
-        target_pose = PoseStamped()
-        target_pose.header.frame = "map"
-        target_pose.header.stamp = rclpy.time.Time()
-        target_pose.pose.position.x = target_array[0]
-        target_pose.pose.position.y = target_array[1]
-        target_pose.pose.position.z = initial_pose.pose.position.z
-        target_pose.pose.orientation = quaternion_from_euler(0, 0, target_array[2])
-        
+            leader_nav.setInitialPose(leader_initial_pose)
+            follower_nav.setInitialPose(follower_initial_pose)
+            leader_nav.waitUntilNav2Active()
+            follower_nav.waitUntilNav2Active()
+            self.leader_task = leader_nav.goToPose(leader_target_pose)
 
-        self.leader_nav.setInitialPose(initial_pose)
-        self.leader_nav.waitUntilNav2Active()
-        self.lead_task = self.leader_nav.goToPose(target_pose)
+            while not leader_nav.isTaskComplete(task = self.leader_task) or follower_running:
+                leader_current_pose = leader_nav.getFeedback(task = self.leader_task).current_pose
+                if not follower_running:
+                    follower_current_pose = follower_initial_pose
+                else:
+                    follower_current_pose = follower_nav.getFeedback(task = self.leader_task).current_pose
+                follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
+                self.follower_task = self.follower_nav.goToPose(follower_target_pose)
+                time.sleep(1)   # update follower at 1Hz
+                if not follower_nav.isTaskComplete(task = self.follower_task):
+                    follower_running = True
+                else:
+                    follower_running = False
 
-        self.leader_running = True
-        while not self.leader_nav.isTaskComplete(task = self.lead_task) and self.leader_running:
-            self.leader_pose = self.leader_nav.getFeedback(task = self.lead_task).current_pose
-        self.leader_running = False
-        self.leader_nav.lifecycleShutdown()
+    def _get_initial_pose(self, vehicle):
+        initial_pose = PoseStamped()
+        try:
+            transform = self.tf_bugger.lookup_transform(vehicle, 'map', rclpy.time.Time())
+            initial_pose.header.frame_id = transform.header
+            initial_pose.pose.position.x = transform.transform.translation.x
+            initial_pose.pose.position.y = transform.transform.translation.y
+            initial_pose.pose.position.z = transform.transform.translation.z
+            initial_pose.pose.orientation = transform.transform.rotation
+            return initial_pose
+        except TransformException as initial_pose_ex:
+            node.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
 
-    def _follow_target(self, mode, initial_pose):
-        if mode == 0:   # arov follow asv
-            self.follower_nav = BasicNavigator("arov")
-            self.follower_nav.changeMap("/path/to/arov_costmap_params.yaml")
-        else:   # asv follow arov
-            self.follower_nav = BasicNavigator("asv")
-            self.follower_nav.changeMap("/path/to/asv_costmap_params.yaml")
-
-        self.follower_nav.setInitialPose(initial_pose)
-        self.follower_nav.waitUntilNav2Active()
-        while self.leader_running:
-            target_pose = self._calculate_pose(self.follower_pose, self.leader_pose)
-            self.follow_task = self.follower_nav.goToPose(target_pose)
-            time.sleep(1)
-        self.follower_nav.lifecycleShutdown()
-
-    def _calculate_pose(self, follow_pose, lead_pose):
-        x_transform = follow_pose.pose.position.x - lead_pose.pose.position.x
-        y_transform = follow_pose.pose.position.y - lead_pose.pose.position.y
+    def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):
+        x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x
+        y_transform = follower_pose.pose.position.y - leader_pose.pose.position.y
         xy_transform = np.array([x_transform, y_transform], dtype=np.float64)
         xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
-        (follow_roll, follow_pitch, _) = euler_from_quaternion(follow_pose.pose.orientation)
+        (follow_roll, follow_pitch, _) = euler_from_quaternion(follower_pose.pose.orientation)
         target_yaw = math.atan2(-y_transform, -x_transform)
         target_orientation = quaternion_from_euler(follow_roll, follow_pitch, target_yaw)
 
         target_pose = PoseStamped()
         target_pose.header.frame_id = "map"
-        target_pose.header.stamp = self.get_clock().now()
-        target_pose.pose.position.x = lead_pose.pose.position.x + xy_transform_normalized[0] * self.follow_clearance
-        target_pose.pose.position.y = lead_pose.pose.position.y + xy_transform_normalized[1] * self.follow_clearance
-        target_pose.pose.position.z = follow_pose.pose.position.z
+        target_pose.header.stamp = rclpy.time.Time()
+        target_pose.pose.position.x = leader_pose.pose.position.x + xy_transform_normalized[0] * follower_clearance
+        target_pose.pose.position.y = leader_pose.pose.position.y + xy_transform_normalized[1] * follower_clearance
+        target_pose.pose.position.z = follower_pose.pose.position.z
         target_pose.pose.orientation.x = target_orientation[0]
         target_pose.pose.orientation.y = target_orientation[1]
         target_pose.pose.orientation.z = target_orientation[2]
@@ -152,8 +113,8 @@ class NavigationActionServer(Node):
 
 def main() -> None:
     rclpy.init()
-    move_server = NavigationActionServer()
-    rclpy.spin(move_server)
+    nav_server = NavigationActionServer()
+    rclpy.spin(nav_server)
 
 if __name__ == '__main__':
     main()

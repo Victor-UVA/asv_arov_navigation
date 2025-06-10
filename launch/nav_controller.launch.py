@@ -1,9 +1,9 @@
-from launch import LaunchDescription, LaunchConfiguration
+from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, FindExecutable
+from launch.substitutions import PythonExpression, LaunchConfiguration, PathJoinSubstitution, FindExecutable
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare, PythonExpression
+from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition
 
 import os

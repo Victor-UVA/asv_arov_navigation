@@ -20,6 +20,7 @@ def generate_launch_description():
     with open(asv_urdf, 'r') as infp:
         asv_description = infp.read()
 
+    use_sim = False
     use_sim = LaunchConfiguration('use_sim')
 
     return LaunchDescription([

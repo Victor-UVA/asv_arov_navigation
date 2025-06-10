@@ -1,7 +1,7 @@
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PythonExpression, LaunchConfiguration, PathJoinSubstitution, FindExecutable
+from launch.substitutions import PythonExpression, LaunchConfiguration, PathJoinSubstitution, FindExecutable, Command
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition
@@ -15,10 +15,6 @@ def generate_launch_description():
     asv_params = os.path.join(pkg_share, 'config', 'asv_nav2_params.yaml')
     arov_urdf = os.path.join(pkg_share, 'models', 'arov_model.urdf')
     asv_urdf = os.path.join(pkg_share, 'models', 'asv_model.urdf')
-    with open(arov_urdf, 'r') as infp:
-        arov_description = infp.read()
-    with open(asv_urdf, 'r') as infp:
-        asv_description = infp.read()
 
     use_sim = LaunchConfiguration('use_sim')
 
@@ -73,7 +69,13 @@ def generate_launch_description():
             namespace='arov',
             package='robot_state_publisher',
             executable='robot_state_publisher',
-            parameters=[{'robot_description': arov_description}]
+            parameters=[{'robot_description': Command(['xacro ', arov_urdf])}]
+        ),
+        Node(
+            namespace='asv',
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            parameters=[{'robot_description': Command(['xacro ', asv_urdf])}]
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(

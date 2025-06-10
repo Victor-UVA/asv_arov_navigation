@@ -32,14 +32,14 @@
     <!-- ASV Footprint -->
     <link name="asv/base_footprint"/>
     <joint name="asv/base_joint" type="fixed">
-        <parent name="asv/base_link"/>
-        <child name="asv/base_footprint"/>
+        <parent link="asv/base_link"/>
+        <child link="asv/base_footprint"/>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
     </joint>
 
     <!-- Pontoons -->
     <xacro:macro name="pontoon" params="id y_reflect">
-        <link name="$asv/pontoon_{id}_link">
+        <link name="asv/pontoon_${id}_link">
             <visual>
                 <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
                 <geometry>
@@ -63,7 +63,7 @@
 
     <!-- Thrusters -->
     <xacro:macro name="thruster" params="id y_reflect">
-        <link name="$asv/thruster_{id}_link">
+        <link name="asv/thruster_${id}_link">
             <visual>
                 <origin xyz="0.0 0.0 0.0" rpy="${pi/2} 0.0 0.0"/>
                 <geometry>

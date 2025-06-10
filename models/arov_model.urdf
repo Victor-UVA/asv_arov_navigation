@@ -25,8 +25,8 @@
     <!-- AROV Footprint -->
     <link name="arov/base_footprint"/>
     <joint name="arov/base_joint" type="fixed">
-        <parent name="arov/base_link"/>
-        <child name="arov/base_footprint"/>
+        <parent link="arov/base_link"/>
+        <child link="arov/base_footprint"/>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
     </joint>
 

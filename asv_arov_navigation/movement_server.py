@@ -3,7 +3,6 @@
 import rclpy
 import math
 import numpy as np
-import time
 
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -65,12 +64,16 @@ class NavigationActionServer(Node):
                 leader_initial_pose = self._get_initial_pose('arov')
                 follower_initial_pose = self._get_initial_pose('asv')
 
+            self.get_logger().info("Defined initial poses")
+
             leader_current_pose = None
             follower_current_pose = None
             follower_running = False
             leader_target_pose = PoseStamped()
             leader_target_pose.header.frame_id = "map"
-            leader_target_pose.header.stamp = rclpy.time.Time()
+            (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
+            leader_target_pose.header.stamp.sec = now_sec
+            leader_target_pose.header.stamp.nanosec = now_nanosec
             leader_target_pose.pose.position.x = msg.request.goal[0]
             leader_target_pose.pose.position.y = msg.request.goal[1]
             leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
@@ -80,11 +83,18 @@ class NavigationActionServer(Node):
             leader_target_pose.pose.orientation.z = orientation[2]
             leader_target_pose.pose.orientation.w = orientation[3]
 
+            self.get_logger().info("Defined target pose")
+
             leader_nav.setInitialPose(leader_initial_pose)
             follower_nav.setInitialPose(follower_initial_pose)
+
+            self.get_logger().info("Set initial poses")
+
             leader_nav.waitUntilNav2Active()
             follower_nav.waitUntilNav2Active()
             self.leader_task = leader_nav.goToPose(leader_target_pose)
+
+            self.get_logger().info("Called goToPose")
 
             while not leader_nav.isTaskComplete(task = self.leader_task) or follower_running:
                 leader_current_pose = leader_nav.getFeedback(task = self.leader_task).current_pose
@@ -94,7 +104,7 @@ class NavigationActionServer(Node):
                     follower_current_pose = follower_nav.getFeedback(task = self.leader_task).current_pose
                 follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
                 self.follower_task = self.follower_nav.goToPose(follower_target_pose)
-                time.sleep(1)   # update follower at 1Hz
+                # time.sleep(1)   # update follower at 1Hz
                 if not follower_nav.isTaskComplete(task = self.follower_task):
                     follower_running = True
                 else:
@@ -104,7 +114,7 @@ class NavigationActionServer(Node):
         initial_pose = PoseStamped()
         if not self.use_sim :
             try:
-                transform = self.tf_buffer.lookup_transform(vehicle, 'map', rclpy.time.Time())
+                transform = self.tf_buffer.lookup_transform(vehicle, 'map', self.get_clock().now())
                 initial_pose.header.frame_id = transform.header
                 initial_pose.pose.position.x = transform.transform.translation.x
                 initial_pose.pose.position.y = transform.transform.translation.y
@@ -114,19 +124,23 @@ class NavigationActionServer(Node):
             except TransformException as initial_pose_ex:
                 node.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
         else :
-            initial_pose.header.frame_id = 'map'
-            initial_pose.header.stamp = rclpy.time.Time()
-            if vehicle == 'asv' :
-                initial_pose.pose.position.x = self.asv_pose.x
-                initial_pose.pose.position.y = self.asv_pose.y
-                quat_orientation = Rotation.from_euler("xyz", [0, 0, self.asv_pose.theta], degrees=False).as_quat()
-                initial_pose.pose.orientation.z = quat_orientation[2]
-            elif vehicle == 'arov' :
-                initial_pose.pose.position.x = self.arov_pose.x
-                initial_pose.pose.position.y = self.arov_pose.y
-                quat_orientation = Rotation.from_euler("xyz", [0, 0, self.arov_pose.theta], degrees=False).as_quat()
-                initial_pose.pose.orientation.z = quat_orientation[2]
-            return initial_pose
+            while True :
+                if (vehicle == 'asv' and self.asv_pose is not None) or (vehicle == 'arov' and self.arov_pose is not None) :
+                    initial_pose.header.frame_id = 'map'
+                    (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
+                    initial_pose.header.stamp.sec = now_sec
+                    initial_pose.header.stamp.nanosec = now_nanosec
+                    if vehicle == 'asv' :
+                        initial_pose.pose.position.x = self.asv_pose.x
+                        initial_pose.pose.position.y = self.asv_pose.y
+                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.asv_pose.theta], degrees=False).as_quat()
+                        initial_pose.pose.orientation.z = quat_orientation[2]
+                    elif vehicle == 'arov' :
+                        initial_pose.pose.position.x = self.arov_pose.x
+                        initial_pose.pose.position.y = self.arov_pose.y
+                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.arov_pose.theta], degrees=False).as_quat()
+                        initial_pose.pose.orientation.z = quat_orientation[2]
+                    return initial_pose
 
     def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):
         x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x
@@ -139,7 +153,9 @@ class NavigationActionServer(Node):
 
         target_pose = PoseStamped()
         target_pose.header.frame_id = "map"
-        target_pose.header.stamp = rclpy.time.Time()
+        (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
+        target_pose.header.stamp.sec = now_sec
+        target_pose.header.stamp.nanosec = now_nanosec
         target_pose.pose.position.x = leader_pose.pose.position.x + xy_transform_normalized[0] * follower_clearance
         target_pose.pose.position.y = leader_pose.pose.position.y + xy_transform_normalized[1] * follower_clearance
         target_pose.pose.position.z = follower_pose.pose.position.z

@@ -105,8 +105,7 @@ def generate_launch_description():
                 'use_localization': 'false',
                 'use_keepout_zones': 'false',
                 'use_speed_zones': 'false'
-            }.items(),
-            #remappings=[('/cmd_vel'), ('/arov/cmd_vel')]
+            }.items()
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -131,7 +130,6 @@ def generate_launch_description():
                 'use_localization': 'false',
                 'use_keepout_zones': 'false',
                 'use_speed_zones': 'false'
-            }.items(),
-            #remappings=[('/cmd_vel'), ('/asv/cmd_vel')]
+            }.items()
         )
     ])

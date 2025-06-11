@@ -17,16 +17,34 @@ from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Float32, Int32
 
+from geometry_msgs.msg import Pose
+
 
 class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
 
+        self.declare_parameter('use_sim', False)
+        self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
+
+        if self.use_sim :
+            self.asv_pose_subscriber = self.create_subscription(Pose, '/asv/robot_pose', self.asv_pose_callback, 1)
+            self.arov_pose_subscriber = self.create_subscription(Pose, '/arov/robot_pose', self.arov_pose_callback, 1)
+
+        self.asv_pose = None
+        self.arov_pose = None
+
         self.arov_nav = BasicNavigator("arov")
         self.asv_nav = BasicNavigator("asv")
         self.leader_task = None
         self.follower_task = None
+
+    def asv_pose_callback(self, data) :
+        self.asv_pose = data
+
+    def arov_pose_callback(self, data) :
+        self.arov_pose = data
 
     def navigation_callback(self, msg):
         if msg.mode == 0:   # stop all tasks
@@ -82,16 +100,24 @@ class NavigationActionServer(Node):
 
     def _get_initial_pose(self, vehicle):
         initial_pose = PoseStamped()
-        try:
-            transform = self.tf_bugger.lookup_transform(vehicle, 'map', rclpy.time.Time())
-            initial_pose.header.frame_id = transform.header
-            initial_pose.pose.position.x = transform.transform.translation.x
-            initial_pose.pose.position.y = transform.transform.translation.y
-            initial_pose.pose.position.z = transform.transform.translation.z
-            initial_pose.pose.orientation = transform.transform.rotation
-            return initial_pose
-        except TransformException as initial_pose_ex:
-            node.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
+        if not self.use_sim :
+            try:
+                transform = self.tf_bugger.lookup_transform(vehicle, 'map', rclpy.time.Time())
+                initial_pose.header.frame_id = transform.header
+                initial_pose.pose.position.x = transform.transform.translation.x
+                initial_pose.pose.position.y = transform.transform.translation.y
+                initial_pose.pose.position.z = transform.transform.translation.z
+                initial_pose.pose.orientation = transform.transform.rotation
+                return initial_pose
+            except TransformException as initial_pose_ex:
+                node.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
+        else :
+            initial_pose.header.frame_id = 'map'
+            initial_pose.header.stamp = rclpy.time.Time()
+            if vehicle == 'asv' :
+                initial_pose.pose = self.asv_pose
+            elif vehicle == 'arov' :
+                initial_pose.pose = self.arov_pose
 
     def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):
         x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x

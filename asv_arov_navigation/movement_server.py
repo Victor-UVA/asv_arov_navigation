@@ -17,7 +17,7 @@ from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Float32, Int32
 
-from geometry_msgs.msg import Pose
+from turtlesim.msg import Pose
 
 
 class NavigationActionServer(Node):
@@ -49,12 +49,12 @@ class NavigationActionServer(Node):
         self.arov_pose = data
 
     def navigation_callback(self, msg):
-        if msg.mode == 0:   # stop all tasks
+        if msg.request.mode == 0:   # stop all tasks
             self.arov_nav.cancelTask()
             self.asv_nav.cancelTask()
 
-        elif (msg.mode == 1) or (msg.mode == 2):
-            if msg.mode == 1:   # ASV leads, AROV follows
+        elif (msg.request.mode == 1) or (msg.request.mode == 2):
+            if msg.request.mode == 1:   # ASV leads, AROV follows
                 leader_nav = self.asv_nav
                 follower_nav = self.arov_nav
                 leader_initial_pose = self._get_initial_pose('asv')
@@ -71,10 +71,10 @@ class NavigationActionServer(Node):
             leader_target_pose = PoseStamped()
             leader_target_pose.header.frame_id = "map"
             leader_target_pose.header.stamp = rclpy.time.Time()
-            leader_target_pose.pose.position.x = msg.goal[0]
-            leader_target_pose.pose.position.y = msg.goal[1]
+            leader_target_pose.pose.position.x = msg.request.goal[0]
+            leader_target_pose.pose.position.y = msg.request.goal[1]
             leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
-            orientation = Rotation.from_euler("xyz", [0, 0, msg_goal[2]], degrees=False).as_quat()
+            orientation = Rotation.from_euler("xyz", [0, 0, msg.request.goal[2]], degrees=False).as_quat()
             leader_target_pose.pose.orientation.x = orientation[0]
             leader_target_pose.pose.orientation.y = orientation[1]
             leader_target_pose.pose.orientation.z = orientation[2]
@@ -117,9 +117,15 @@ class NavigationActionServer(Node):
             initial_pose.header.frame_id = 'map'
             initial_pose.header.stamp = rclpy.time.Time()
             if vehicle == 'asv' :
-                initial_pose.pose = self.asv_pose
+                initial_pose.pose.position.x = self.asv_pose.x
+                initial_pose.pose.position.y = self.asv_pose.y
+                quat_orientation = Rotation.from_euler("xyz", [0, 0, self.asv_pose.theta], degrees=False).as_quat()
+                initial_pose.pose.orientation.z = quat_orientation[2]
             elif vehicle == 'arov' :
-                initial_pose.pose = self.arov_pose
+                initial_pose.pose.position.x = self.arov_pose.x
+                initial_pose.pose.position.y = self.arov_pose.y
+                quat_orientation = Rotation.from_euler("xyz", [0, 0, self.arov_pose.theta], degrees=False).as_quat()
+                initial_pose.pose.orientation.z = quat_orientation[2]
             return initial_pose
 
     def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):

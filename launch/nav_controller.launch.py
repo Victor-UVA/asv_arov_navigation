@@ -60,11 +60,13 @@ def generate_launch_description():
         ),
         Node(
             package='asv_arov_navigation',
-            executable='asv_arov_control_server'
+            executable='asv_arov_control_server',
+            parameters=[{'use_sim', use_sim}]
         ),
         Node(
             package='asv_arov_navigation',
-            executable='movement_server'
+            executable='movement_server',
+            parameters=[{'use_sim', use_sim}]
         ),
         Node(
             namespace='arov',

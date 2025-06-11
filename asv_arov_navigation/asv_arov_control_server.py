@@ -8,6 +8,8 @@ from asv_arov_interfaces.action import ControlModeAction
 from asv_arov_interfaces.action import CleaningAction
 from asv_arov_interfaces.action import NavigationAction
 
+from geometry_msgs.msg import Pose
+
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -57,6 +59,14 @@ class ControlActionServer(Node) :
         self.navigation_action_client = NavigationActionClient()
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
+        self.declare_parameter('use_sim', False)
+        self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
+
+        if self.use_sim :
+            self.asv_pose_subscriber = self.create_subscription(Pose, '/asv/robot_pose', self.asv_pose_callback, 1)
+
+        self.asv_pose = None
+
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -69,6 +79,9 @@ class ControlActionServer(Node) :
         self.cleaning_check = False
         self.navigation_future = None
         self.navigation_check = False
+
+    def asv_pose_callback(self, data) :
+        self.asv_pose = data
         
     def execute_callback_async(self, goal_handle) :
         self.get_logger().info("we got here")
@@ -76,16 +89,24 @@ class ControlActionServer(Node) :
             while True :
                 if self.state == ControlState.STARTING :
                     if self.asv_home_pose is None :
-                        t = None
-                        try :
-                            t = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
-                        except TransformException as ex :
-                            self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
-                        if t is not None :
+                        if not self.use_sim :
+                            t = None
+                            try :
+                                t = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
+                            except TransformException as ex :
+                                self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
+                            if t is not None :
+                                self.asv_home_pose = [0, 0, 0]
+                                self.asv_home_pose[0] = t.transform.translation.x
+                                self.asv_home_pose[1] = t.transform.translation.y
+                                rpy = Rotation.from_quat([t.transform.orientation.x, t.transform.orientation.y, t.transform.orientation.z, t.transform.orientation.w]).as_euler("xyz", degrees=False)
+                                self.asv_home_pose[2] = rpy[2]
+                                self.state = ControlState.NAVIGATING
+                        elif self.asv_home_pose is not None :
                             self.asv_home_pose = [0, 0, 0]
-                            self.asv_home_pose[0] = t.transform.translation.x
-                            self.asv_home_pose[1] = t.transform.translation.y
-                            rpy = Rotation.from_quat([t.transform.orientation.x, t.transform.orientation.y, t.transform.orientation.z, t.transform.orientation.w]).as_euler("xyz", degrees=False)
+                            self.asv_home_pose[0] = self.asv_pose.position.x
+                            self.asv_home_pose[1] = self.asv_pose.position.y
+                            rpy = Rotation.from_quat([self.asv_pose.orientation.x, self.asv_pose.orientation.y, self.asv_pose.orientation.z, self.asv_pose.orientation.w]).as_euler("xyz", degrees=False)
                             self.asv_home_pose[2] = rpy[2]
                             self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.CLEANING :

@@ -18,7 +18,7 @@ class CleaningActionClient(Node) :
 
     def __init__(self) :
         super().__init__('cleaning_action_client')
-        self.action_client = ActionClient(self, CleaningAction, 'cleaning_action_server')
+        self.action_client = ActionClient(self, CleaningAction, 'cleaning_action')
 
     def send_goal(self, request) :
         goal_msg = CleaningAction.Goal()
@@ -32,7 +32,7 @@ class NavigationActionClient(Node) :
 
     def __init__(self) :
         super().__init__('navigation_action_client')
-        self.action_client = ActionClient(self, NavigationAction, 'navigation_action_server')
+        self.action_client = ActionClient(self, NavigationAction, 'navigation_action')
 
     # stop is vehicle 0, ASV is vehicle 1, AROV is vehicle 2
     def send_goal(self, goal, vehicle) :
@@ -55,7 +55,7 @@ class ControlActionServer(Node) :
         super().__init__('control_action_server')
         # self.cleaning_action_client = CleaningActionClient()
         self.navigation_action_client = NavigationActionClient()
-        self.action_server = ActionServer(self, ControlModeAction, 'control_action_server', self.execute_callback_async)
+        self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -71,7 +71,8 @@ class ControlActionServer(Node) :
         self.navigation_check = False
         
     def execute_callback_async(self, goal_handle) :
-        if goal_handle.mode == 1 :
+        self.get_logger().info("we got here")
+        if goal_handle.request.mode == 1 :
             while True :
                 if self.state == ControlState.STARTING :
                     if self.asv_home_pose is None :

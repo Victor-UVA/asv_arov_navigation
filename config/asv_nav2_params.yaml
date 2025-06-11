@@ -1,18 +1,6 @@
-define: &radius 0.65   #0.35 for arov, 0.65 for asv
-define: &base_frame "asv/base_link"
-define: &model "DiffDrive" # "Omni" for arov, "DiffDrive" for asv
-define: &goal_cost 3.0  # 8.0 for arov, 3.0 for asv, 5.0 default
-define: &goal_thresh 1
-define: &path_mode 0  # 1 for arov, 0 for asv
-
 #--- prediction_horizon_s = steps * dt ---#
 #--- prediction_horizon_s * vmax <= local_side/2 otherwise movement will stutter --#
 #--- prediction_horizon_s * max_speed / path_resolution / 3.0 = path_offset ---#
-define: &steps 20
-define: &dt 0.1
-define: &vmax 0.5 # max xy vels
-define: &local_side 3 # side length of the square made for the local costmap
-define: &path_offset 20
 
 controller_server:
   ros__parameters:
@@ -29,9 +17,9 @@ controller_server:
     goal_checker_plugins: [ "general_goal_checker" ]
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
-      motion_model: *model
-      time_steps: *steps
-      model_dt: *dt
+      motion_model: "DiffDrive"
+      time_steps: 20
+      model_dt: 0.1
       batch_size: 2000
       iteration_count: 1
       temperature: 0.3
@@ -39,17 +27,24 @@ controller_server:
       prune_distance: 1.5 # default value
       vx_std: 0.2
       vx_min: 0.1
-      vx_max: *vmax
+      vx_max: 0.5
       ax_min: -2.0
       ax_max: 2.0
       vy_std: 0.2
-      vy_max: *vmax
+      vy_max: 0.5
       ay_min: -2.0
       ay_max: 2.0
       wz_std: 0.2
       wz_max: 1.0
       az_max: 2.0
-      critics: [ "ConstraintCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathAngleCritic", "PathFollowCritic", "PreferForwardCritic"]
+      critics: [ "ConstraintCritic",
+                 "CostCritic",
+                 "GoalCritic",
+                 "GoalAngleCritic",
+                 "PathAlignCritic",
+                 "PathAngleCritic",
+                 "PathFollowCritic",
+                 "PreferForwardCritic"]
       ConstraintCritic:
         enabled: True
         cost_power: 1
@@ -66,37 +61,37 @@ controller_server:
       GoalCritic:
         enabled: True
         cost_power: 1
-        cost_weight: *goal_cost  # higher - closer to goal, lower - more lax, default 5.0
-        threshold_to_consider: *goal_thresh  # time_steps * model_dt
+        cost_weight: 3.0  # higher - closer to goal, lower - more lax, default 5.0
+        threshold_to_consider: 1  # time_steps * model_dt
       GoalAngleCritic:
         enabled: True
         cost_power: 1
-        cost_weight: *goal_cost  # higher - closer to goal, lower - more lax, default 3.0
+        cost_weight: 3.0  # higher - closer to goal, lower - more lax, default 3.0
         threshold_to_consider: 1  # start rotating to goal pose 1m away
       PathAlignCritic:
         enabled: True
         cost_power: 1
         cost_weight: 14.0
-        offset_from_furthest: *path_offset
-        threshold_to_consider: *goal_thresh
+        offset_from_furthest: 20
+        threshold_to_consider: 1
       PathAngleCritic:
         enabled: True
         cost_power: 1
         cost_weight: 2.0
-        offset_from_furthest: *path_offset
-        threshold_to_consider: *goal_thresh
-        mode: *path_mode
+        offset_from_furthest: 20
+        threshold_to_consider: 1
+        mode: 0
       PathFollowCritic:
         enabled: True
         cost_power: 1
         cost_weight: 5.0
         offset_from_furthest: 10
-        threshold_to_consider: *goal_thresh
+        threshold_to_consider: 1
       PreferForwardCritic:
         enabled: True
         cost_power: 1
         cost_weight: 5.0
-        threshold_to_consider: *goal_thresh
+        threshold_to_consider: 1
 #      TwirlingCritic: # disable on ASV, makes sure AROV doesn't spin in place
 #        enabled: False
 #        twirling_cost_power: 1
@@ -117,8 +112,8 @@ global_costmap:
   global_costmap:
     ros__parameters:
       global_frame: map
-      robot_base_frame: *base_frame
-      robot_radius: *radius
+      robot_base_frame: "arov/base_frame"
+      robot_radius: 0.65
       resolution: 0.01
       update_frequency: 5.0
       publish_frequency: 5.0
@@ -146,10 +141,10 @@ local_costmap:
   local_costmap:
     ros__parameters:
       global_frame: odom
-      robot_base_frame: *base_frame
-      robot_radius: *radius
-      height: *local_side
-      width: *local_side
+      robot_base_frame: "arov/base_frame"
+      robot_radius: 0.65
+      height: 3
+      width: 3
       resolution: 0.01
       footprint: "[[0.325, 0.425], [0.325, -0.425], [-0.325, -0.425], [-0.325, 0.425]]"
       publish_frequency: 5.0

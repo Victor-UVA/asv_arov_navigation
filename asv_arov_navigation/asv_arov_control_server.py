@@ -91,7 +91,7 @@ class ControlActionServer(Node) :
                         if not self.use_sim :
                             t = None
                             try :
-                                t = self.tf_buffer.lookup_transform('asv', 'map', rclpy.time.Time())
+                                t = self.tf_buffer.lookup_transform('asv', 'map', self.get_clock().now())
                             except TransformException as ex :
                                 self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                             if t is not None :
@@ -129,7 +129,6 @@ class ControlActionServer(Node) :
                         self.asv_target_pose_id += 1
                         self.state = ControlState.CLEANING
         elif goal_handle.mode == 0 :
-            self.asv_home_pose.header.stamp = rclpy.time.Time()
             future = self.navigation_action_client.send_goal(self.asv_home_pose, 1)
             rclpy.spin_until_future_complete(self.navigation_action_client, future)
             return True

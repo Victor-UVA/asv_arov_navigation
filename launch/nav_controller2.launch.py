@@ -19,214 +19,6 @@ def generate_launch_description():
 
     use_sim = LaunchConfiguration('use_sim')
 
-    lifecycle_nodes = [
-        'controller_server',
-        'smoother_server',
-        'planner_server',
-        'route_server',
-        'behavior_server',
-        'velocity_smoother',
-        'collision_monitor',
-        'bt_navigator',
-        'waypoint_follower',
-        'docking_server',
-    ]
-
-    remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
-
-    configured_asv_params = ParameterFile(
-        RewrittenYaml(
-            source_file=asv_params,
-            root_key='asv',
-            convert_types=True,
-        ),
-        allow_substs=True,
-    )
-    configured_arov_params = ParameterFile(
-        RewrittenYaml(
-            source_file=arov_params,
-            root_key='arov',
-            convert_types=True,
-        ),
-        allow_substs=True,
-    )
-
-    load_composable_nodes_asv = GroupAction(
-        actions=[
-            LoadComposableNodes(
-                target_container='asv',
-                composable_node_descriptions=[
-                    ComposableNode(
-                        package='nav2_controller',
-                        plugin='nav2_controller::ControllerServer',
-                        name='controller_server',
-                        parameters=[configured_asv_params],
-                        remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
-                    ),
-                    ComposableNode(
-                        package='nav2_smoother',
-                        plugin='nav2_smoother::SmootherServer',
-                        name='smoother_server',
-                        parameters=[configured_asv_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_planner',
-                        plugin='nav2_planner::PlannerServer',
-                        name='planner_server',
-                        parameters=[configured_asv_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_route',
-                        plugin='nav2_route::RouteServer',
-                        name='route_server',
-                        parameters=[configured_asv_params, {'graph_filepath': ''}],
-                        remappings=remappings),
-                    ComposableNode(
-                        package='nav2_behaviors',
-                        plugin='behavior_server::BehaviorServer',
-                        name='behavior_server',
-                        parameters=[configured_asv_params],
-                        remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
-                    ),
-                    ComposableNode(
-                        package='nav2_bt_navigator',
-                        plugin='nav2_bt_navigator::BtNavigator',
-                        name='bt_navigator',
-                        parameters=[configured_asv_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_waypoint_follower',
-                        plugin='nav2_waypoint_follower::WaypointFollower',
-                        name='waypoint_follower',
-                        parameters=[configured_asv_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_velocity_smoother',
-                        plugin='nav2_velocity_smoother::VelocitySmoother',
-                        name='velocity_smoother',
-                        parameters=[configured_asv_params],
-                        remappings=remappings
-                        + [('cmd_vel', 'cmd_vel_nav')],
-                    ),
-                    ComposableNode(
-                        package='nav2_collision_monitor',
-                        plugin='nav2_collision_monitor::CollisionMonitor',
-                        name='collision_monitor',
-                        parameters=[configured_asv_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='opennav_docking',
-                        plugin='opennav_docking::DockingServer',
-                        name='docking_server',
-                        parameters=[configured_asv_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_lifecycle_manager',
-                        plugin='nav2_lifecycle_manager::LifecycleManager',
-                        name='lifecycle_manager_navigation',
-                        parameters=[
-                            {'autostart': 'true', 'node_names': lifecycle_nodes}
-                        ],
-                    ),
-                ],
-            ),
-        ],
-    )
-
-    load_composable_nodes_arov = GroupAction(
-        actions=[
-            LoadComposableNodes(
-                target_container='asv',
-                composable_node_descriptions=[
-                    ComposableNode(
-                        package='nav2_controller',
-                        plugin='nav2_controller::ControllerServer',
-                        name='controller_server',
-                        parameters=[configured_arov_params],
-                        remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
-                    ),
-                    ComposableNode(
-                        package='nav2_smoother',
-                        plugin='nav2_smoother::SmootherServer',
-                        name='smoother_server',
-                        parameters=[configured_arov_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_planner',
-                        plugin='nav2_planner::PlannerServer',
-                        name='planner_server',
-                        parameters=[configured_arov_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_route',
-                        plugin='nav2_route::RouteServer',
-                        name='route_server',
-                        parameters=[configured_arov_params, {'graph_filepath': ''}],
-                        remappings=remappings),
-                    ComposableNode(
-                        package='nav2_behaviors',
-                        plugin='behavior_server::BehaviorServer',
-                        name='behavior_server',
-                        parameters=[configured_arov_params],
-                        remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
-                    ),
-                    ComposableNode(
-                        package='nav2_bt_navigator',
-                        plugin='nav2_bt_navigator::BtNavigator',
-                        name='bt_navigator',
-                        parameters=[configured_arov_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_waypoint_follower',
-                        plugin='nav2_waypoint_follower::WaypointFollower',
-                        name='waypoint_follower',
-                        parameters=[configured_arov_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_velocity_smoother',
-                        plugin='nav2_velocity_smoother::VelocitySmoother',
-                        name='velocity_smoother',
-                        parameters=[configured_arov_params],
-                        remappings=remappings
-                        + [('cmd_vel', 'cmd_vel_nav')],
-                    ),
-                    ComposableNode(
-                        package='nav2_collision_monitor',
-                        plugin='nav2_collision_monitor::CollisionMonitor',
-                        name='collision_monitor',
-                        parameters=[configured_arov_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='opennav_docking',
-                        plugin='opennav_docking::DockingServer',
-                        name='docking_server',
-                        parameters=[configured_arov_params],
-                        remappings=remappings,
-                    ),
-                    ComposableNode(
-                        package='nav2_lifecycle_manager',
-                        plugin='nav2_lifecycle_manager::LifecycleManager',
-                        name='lifecycle_manager_navigation',
-                        parameters=[
-                            {'autostart': 'true', 'node_names': lifecycle_nodes}
-                        ],
-                    ),
-                ],
-            ),
-        ],
-    )
-
     ld = LaunchDescription([
         Node(
             package='turtlesim',
@@ -277,23 +69,94 @@ def generate_launch_description():
             executable='movement_server',
             parameters=[{'use_sim': use_sim}]
         ),
+        # Map server node
         Node(
-            namespace='arov',
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            parameters=[{'robot_description': Command(['xacro ', arov_urdf])}],
-            condition=IfCondition(PythonExpression(['not ', use_sim]))
+            package='nav2_map_server',
+            executable='map_server',
+            name='map_server',
+            output='screen',
+            parameters=[arov_params, {'yaml_filename': map}]
         ),
+        # Nav2 Planner
         Node(
-            namespace='asv',
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            parameters=[{'robot_description': Command(['xacro ', asv_urdf])}],
-            condition=IfCondition(PythonExpression(['not ', use_sim]))
+            package='nav2_planner',
+            executable='planner_server',
+            name='planner_server',
+            output='screen',
+            parameters=[arov_params, {'use_sim_time': 'false'}]
+        ),
+        # Nav2 Controller
+        Node(
+            package='nav2_controller',
+            executable='controller_server',
+            name='controller_server',
+            output='screen',
+            parameters=[arov_params, 
+                        {'use_sim_time': 'false',
+                            'current_goal_checker': 'simple_goal_checker',
+                            'current_progress_checker': 'simple_progress_checker'
+                        }]
+        ),
+        # Nav2 Behaviors
+        Node(
+            package='nav2_behaviors',
+            executable='behavior_server',
+            name='behavior_server',
+            output='screen',
+            parameters=[arov_params, {'use_sim_time': 'false'}]
+        ),
+        # Nav2 BT Navigator
+        Node(
+            package='nav2_bt_navigator',
+            executable='bt_navigator',
+            name='bt_navigator',
+            output='screen',
+            parameters=[arov_params, {'use_sim_time': 'false'}]
+        ),
+        # Map server node
+        Node(
+            package='nav2_map_server',
+            executable='map_server',
+            name='map_server',
+            output='screen',
+            parameters=[asv_params, {'yaml_filename': map}]
+        ),
+        # Nav2 Planner
+        Node(
+            package='nav2_planner',
+            executable='planner_server',
+            name='planner_server',
+            output='screen',
+            parameters=[asv_params, {'use_sim_time': 'false'}]
+        ),
+        # Nav2 Controller
+        Node(
+            package='nav2_controller',
+            executable='controller_server',
+            name='controller_server',
+            output='screen',
+            parameters=[asv_params, 
+                        {'use_sim_time': 'false',
+                            'current_goal_checker': 'simple_goal_checker',
+                            'current_progress_checker': 'simple_progress_checker'
+                        }]
+        ),
+        # Nav2 Behaviors
+        Node(
+            package='nav2_behaviors',
+            executable='behavior_server',
+            name='behavior_server',
+            output='screen',
+            parameters=[asv_params, {'use_sim_time': 'false'}]
+        ),
+        # Nav2 BT Navigator
+        Node(
+            package='nav2_bt_navigator',
+            executable='bt_navigator',
+            name='bt_navigator',
+            output='screen',
+            parameters=[asv_params, {'use_sim_time': 'false'}]
         ),
     ])
-
-    ld.add_action(load_composable_nodes_asv)
-    ld.add_action(load_composable_nodes_arov)
 
     return ld

@@ -24,6 +24,8 @@ class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.declare_parameter('use_sim', False)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
@@ -102,7 +104,7 @@ class NavigationActionServer(Node):
         initial_pose = PoseStamped()
         if not self.use_sim :
             try:
-                transform = self.tf_bugger.lookup_transform(vehicle, 'map', rclpy.time.Time())
+                transform = self.tf_buffer.lookup_transform(vehicle, 'map', rclpy.time.Time())
                 initial_pose.header.frame_id = transform.header
                 initial_pose.pose.position.x = transform.transform.translation.x
                 initial_pose.pose.position.y = transform.transform.translation.y
@@ -118,6 +120,7 @@ class NavigationActionServer(Node):
                 initial_pose.pose = self.asv_pose
             elif vehicle == 'arov' :
                 initial_pose.pose = self.arov_pose
+            return initial_pose
 
     def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):
         x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x

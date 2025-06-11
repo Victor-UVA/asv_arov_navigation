@@ -90,11 +90,11 @@ class NavigationActionServer(Node):
 
             self.get_logger().info("Set initial poses")
 
-            leader_nav.waitUntilNav2Active()
-            follower_nav.waitUntilNav2Active()
+            #leader_nav.waitUntilNav2Active(localizer="")
+            #follower_nav.waitUntilNav2Active(localizer="")
             self.leader_task = leader_nav.goToPose(leader_target_pose)
 
-            self.get_logger().info("Called goToPose")
+            self.get_logger().info("Completed goToPose call")
 
             while not leader_nav.isTaskComplete(task = self.leader_task) or follower_running:
                 leader_current_pose = leader_nav.getFeedback(task = self.leader_task).current_pose

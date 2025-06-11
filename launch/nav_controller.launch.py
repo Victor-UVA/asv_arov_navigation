@@ -22,7 +22,8 @@ def generate_launch_description():
         Node(
             package='turtlesim',
             executable='turtlesim_node',
-            condition=IfCondition(use_sim)
+            condition=IfCondition(use_sim),
+            remappings=[('/arov/pose', '/arov/robot_pose'), ('/asv/pose', '/asv/robot_pose')]
         ),
         ExecuteProcess(
             cmd=[[
@@ -69,13 +70,15 @@ def generate_launch_description():
             namespace='arov',
             package='robot_state_publisher',
             executable='robot_state_publisher',
-            parameters=[{'robot_description': Command(['xacro ', arov_urdf])}]
+            parameters=[{'robot_description': Command(['xacro ', arov_urdf])}],
+            condition=IfCondition(PythonExpression(['not ', use_sim]))
         ),
         Node(
             namespace='asv',
             package='robot_state_publisher',
             executable='robot_state_publisher',
-            parameters=[{'robot_description': Command(['xacro ', asv_urdf])}]
+            parameters=[{'robot_description': Command(['xacro ', asv_urdf])}],
+            condition=IfCondition(PythonExpression(['not ', use_sim]))
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(

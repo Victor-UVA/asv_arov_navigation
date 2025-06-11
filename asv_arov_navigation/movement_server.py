@@ -21,7 +21,7 @@ from std_msgs.msg import Bool, Float32, Int32
 class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
-        self.action_server = ActionServer(self, NavigationAction, 'navigation_action_server', self.navigation_callback)
+        self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
 
         self.arov_nav = BasicNavigator("arov")
         self.asv_nav = BasicNavigator("asv")

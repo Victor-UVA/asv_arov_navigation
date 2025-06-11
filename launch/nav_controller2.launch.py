@@ -38,6 +38,7 @@ def generate_launch_description():
         RewrittenYaml(
             source_file=asv_params,
             root_key='asv',
+            param_rewrites=[],
             convert_types=True,
         ),
         allow_substs=True,
@@ -46,6 +47,7 @@ def generate_launch_description():
         RewrittenYaml(
             source_file=arov_params,
             root_key='arov',
+            param_rewrites=[],
             convert_types=True,
         ),
         allow_substs=True,
@@ -142,7 +144,7 @@ def generate_launch_description():
     load_composable_nodes_arov = GroupAction(
         actions=[
             LoadComposableNodes(
-                target_container='asv',
+                target_container='arov',
                 composable_node_descriptions=[
                     ComposableNode(
                         package='nav2_controller',

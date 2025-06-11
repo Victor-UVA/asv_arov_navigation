@@ -22,6 +22,8 @@ class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.arov_nav = BasicNavigator("arov")
         self.asv_nav = BasicNavigator("asv")
@@ -83,7 +85,7 @@ class NavigationActionServer(Node):
     def _get_initial_pose(self, vehicle):
         initial_pose = PoseStamped()
         try:
-            transform = self.tf_bugger.lookup_transform(vehicle, 'map', rclpy.time.Time())
+            transform = self.tf_buffer.lookup_transform(vehicle, 'map', rclpy.time.Time())
             initial_pose.header.frame_id = transform.header
             initial_pose.pose.position.x = transform.transform.translation.x
             initial_pose.pose.position.y = transform.transform.translation.y

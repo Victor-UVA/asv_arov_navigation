@@ -8,6 +8,7 @@ from geometry_msgs.msg import Twist, Quaternion, TransformStamped, PoseWithCovar
 from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
 from builtin_interfaces.msg import Time
+import rclpy.time
 from tf2_ros import TransformBroadcaster
 from lifecycle_msgs.msg import State as LifecycleState
 from rclpy.executors import MultiThreadedExecutor
@@ -158,7 +159,7 @@ class PosePublisher(LifecycleNode):
         else :
             t = None
             try :
-                t = self.tf_buffer.lookup_transform(self.get_namespace().strip('/') + '/base_link', 'map', self.get_clock().now())
+                t = self.tf_buffer.lookup_transform(self.get_namespace().strip('/') + '/base_link', 'map', rclpy.time.Time()) # self.get_clock().now()
             except TransformException as ex :
                 self.get_logger().info(f'Could not get robot pose as transform: {ex}')
             if t is not None :

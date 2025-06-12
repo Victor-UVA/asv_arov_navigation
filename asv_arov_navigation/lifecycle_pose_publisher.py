@@ -61,7 +61,7 @@ class PosePublisher(LifecycleNode):
     def pose_callback(self, data) :
         self.x = data.x
         self.y = data.y
-        self.yaw = data.yaw
+        self.yaw = data.theta
     
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')

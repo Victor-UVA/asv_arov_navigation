@@ -95,7 +95,7 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      global_frame: odom
+      global_frame: asv/odom
       robot_base_frame: asv/base_frame
       robot_radius: 0.65
       height: 3
@@ -167,7 +167,7 @@ behavior_server:
       plugin: "nav2_behaviors::Wait"
     assisted_teleop:
       plugin: "nav2_behaviors::AssistedTeleop"
-    local_frame: odom
+    local_frame: asv/odom
     global_frame: map
     robot_base_frame: asv/base_link
     transform_timeout: 0.1

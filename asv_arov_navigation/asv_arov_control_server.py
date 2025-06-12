@@ -91,14 +91,14 @@ class ControlActionServer(Node) :
                         if not self.use_sim :
                             t = None
                             try :
-                                t = self.tf_buffer.lookup_transform('asv', 'map', self.get_clock().now())
+                                t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
                             except TransformException as ex :
                                 self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                             if t is not None :
                                 self.asv_home_pose = [0, 0, 0]
                                 self.asv_home_pose[0] = t.transform.translation.x
                                 self.asv_home_pose[1] = t.transform.translation.y
-                                rpy = Rotation.from_quat([t.transform.orientation.x, t.transform.orientation.y, t.transform.orientation.z, t.transform.orientation.w]).as_euler("xyz", degrees=False)
+                                rpy = Rotation.from_quat([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]).as_euler("xyz", degrees=False)
                                 self.asv_home_pose[2] = rpy[2]
                                 self.state = ControlState.NAVIGATING
                         elif self.asv_pose is not None :

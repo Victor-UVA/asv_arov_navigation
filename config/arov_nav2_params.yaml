@@ -128,7 +128,7 @@ arov/global_costmap:
         restore_cleared_footprint: True
         map_subscribe_transient_local: True
         transform_tolerance: 0.0
-        map_topic: map
+        map_topic: /arov/map
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         inflation_radius: 0.3
@@ -139,7 +139,9 @@ arov/global_costmap:
 arov/map_server:
   ros__parameters:
     use_sim_time: false
-    yaml_filename: ""
+    yaml_filename: "dog_pool.yaml"
+    frame_id: "map"
+    topic_name: "map"
 
 arov/planner_server:
   ros__parameters:

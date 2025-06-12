@@ -119,16 +119,18 @@ class NavigationActionServer(Node):
     def _get_initial_pose(self, vehicle):
         initial_pose = PoseStamped()
         if not self.use_sim :
-            try:
-                transform = self.tf_buffer.lookup_transform(vehicle, 'map', self.get_clock().now())
-                initial_pose.header.frame_id = transform.header
-                initial_pose.pose.position.x = transform.transform.translation.x
-                initial_pose.pose.position.y = transform.transform.translation.y
-                initial_pose.pose.position.z = transform.transform.translation.z
-                initial_pose.pose.orientation = transform.transform.rotation
-                return initial_pose
-            except TransformException as initial_pose_ex:
-                self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
+            while True :
+                try:
+                    transform = self.tf_buffer.lookup_transform(vehicle + '/base_link', 'map', rclpy.time.Time())
+                    initial_pose.header.frame_id = 'map'
+                    initial_pose.header.stamp = self.get_clock().now().to_msg()
+                    initial_pose.pose.position.x = transform.transform.translation.x
+                    initial_pose.pose.position.y = transform.transform.translation.y
+                    initial_pose.pose.position.z = transform.transform.translation.z
+                    initial_pose.pose.orientation = transform.transform.rotation
+                    return initial_pose
+                except TransformException as initial_pose_ex:
+                    self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
         else :
             while True :
                 if (vehicle == 'asv' and self.asv_pose is not None) or (vehicle == 'arov' and self.arov_pose is not None) :

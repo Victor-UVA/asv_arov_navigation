@@ -169,7 +169,7 @@ class PosePublisher(LifecycleNode):
                 pose.pose.pose.position.x = t.transform.translation.x
                 pose.pose.pose.position.y = t.transform.translation.y
                 pose.pose.pose.position.z = t.transform.translation.z
-                pose.pose.pose.orientation = t.transform.orientation
+                pose.pose.pose.orientation = t.transform.rotation
                 pose.pose.covariance = [
                     0.05, 0, 0, 0, 0, 0,
                     0, 0.05, 0, 0, 0, 0,

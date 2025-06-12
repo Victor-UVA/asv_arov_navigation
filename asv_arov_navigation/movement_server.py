@@ -89,9 +89,12 @@ class NavigationActionServer(Node):
             follower_nav.setInitialPose(follower_initial_pose)
 
             self.get_logger().info("Set initial poses")
-
-            #leader_nav.waitUntilNav2Active(localizer="")
-            #follower_nav.waitUntilNav2Active(localizer="")
+            if msg.request.mode == 1 :
+                leader_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
+                follower_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
+            else :
+                leader_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
+                follower_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
             self.leader_task = leader_nav.goToPose(leader_target_pose)
 
             self.get_logger().info("Completed goToPose call")

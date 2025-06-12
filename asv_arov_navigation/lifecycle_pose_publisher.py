@@ -158,11 +158,24 @@ class PosePublisher(LifecycleNode):
             try :
                 t = self.tf_buffer.lookup_transform(self.get_namespace(), 'map', self.get_clock().now())
             except TransformException as ex :
-                self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
+                self.get_logger().info(f'Could not get robot pose as transform: {ex}')
             if t is not None :
                 pose = PoseWithCovarianceStamped()
                 pose.header.frame_id = 'map'
                 pose.header.stamp = self.get_clock().now().to_msg()
+                pose.pose.pose.position.x = t.translation.x
+                pose.pose.pose.position.y = t.translation.y
+                pose.pose.pose.position.z = t.translation.z
+                pose.pose.pose.orientation = t.orientation
+                pose.pose.covariance = [
+                    0.05, 0, 0, 0, 0, 0,
+                    0, 0.05, 0, 0, 0, 0,
+                    0, 0, 0.01, 0, 0, 0,
+                    0, 0, 0, 0.01, 0, 0,
+                    0, 0, 0, 0, 0.01, 0,
+                    0, 0, 0, 0, 0, 0.1
+                ]
+                self.pose_pub.publish(pose)
 
 
 def main(args=None):

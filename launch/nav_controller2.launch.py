@@ -69,8 +69,21 @@ def generate_launch_description():
             executable='movement_server',
             parameters=[{'use_sim': use_sim}]
         ),
+        Node(
+            namespace='arov',
+            package='asv_arov_navigation',
+            executable='lifecycle_pose_publisher',
+            parameters=[{'cmd_vel_topic': '/arov/cmd_vel', 'use_sim': use_sim}]
+        ),
+        Node(
+            namespace='asv',
+            package='asv_arov_navigation',
+            executable='lifecycle_pose_publisher',
+            parameters=[{'cmd_vel_topic': '/asv/cmd_vel', 'use_sim': use_sim}]
+        ),
         # Map server node
         Node(
+            namespace='arov',
             package='nav2_map_server',
             executable='map_server',
             name='map_server',
@@ -79,6 +92,7 @@ def generate_launch_description():
         ),
         # Nav2 Planner
         Node(
+            namespace='arov',
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
@@ -87,6 +101,7 @@ def generate_launch_description():
         ),
         # Nav2 Controller
         Node(
+            namespace='arov',
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
@@ -99,6 +114,7 @@ def generate_launch_description():
         ),
         # Nav2 Behaviors
         Node(
+            namespace='arov',
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
@@ -107,6 +123,7 @@ def generate_launch_description():
         ),
         # Nav2 BT Navigator
         Node(
+            namespace='arov',
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
@@ -115,6 +132,7 @@ def generate_launch_description():
         ),
         # Map server node
         Node(
+            namespace='asv',
             package='nav2_map_server',
             executable='map_server',
             name='map_server',
@@ -123,6 +141,7 @@ def generate_launch_description():
         ),
         # Nav2 Planner
         Node(
+            namespace='asv',
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
@@ -131,6 +150,7 @@ def generate_launch_description():
         ),
         # Nav2 Controller
         Node(
+            namespace='asv',
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
@@ -143,6 +163,7 @@ def generate_launch_description():
         ),
         # Nav2 Behaviors
         Node(
+            namespace='asv',
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
@@ -151,6 +172,7 @@ def generate_launch_description():
         ),
         # Nav2 BT Navigator
         Node(
+            namespace='asv',
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',

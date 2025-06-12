@@ -70,7 +70,7 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [[5, 5, 0], [0, 5, 0]]
+        self.asv_target_poses = [[0, 0, 0], [0, 3, 0]]
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
 

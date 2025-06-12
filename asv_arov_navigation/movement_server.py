@@ -95,6 +95,9 @@ class NavigationActionServer(Node):
             else :
                 leader_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
                 follower_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
+
+            self.get_logger().info("Nav2 active")
+
             self.leader_task = leader_nav.goToPose(leader_target_pose)
 
             self.get_logger().info("Completed goToPose call")

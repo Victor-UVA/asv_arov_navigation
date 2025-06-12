@@ -26,15 +26,15 @@ class PosePublisher(LifecycleNode):
         self.declare_parameter('use_sim', False)
 
         self.cmd_vel_topic = self.get_parameter('cmd_vel_topic').get_parameter_value().string_value
-        self.odom_topic = self.get_parameter('odom_topic').get_parameter_value().string_value
-        self.pose_topic = self.get_parameter('pose_topic').get_parameter_value().string_value
+        self.odom_topic = self.get_namespace() + self.get_parameter('odom_topic').get_parameter_value().string_value
+        self.pose_topic = self.get_namespace() + self.get_parameter('pose_topic').get_parameter_value().string_value
         self.use_sim = self.get_parameter('use_sim').get_parameter_value().bool_value
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         
         self._lifecycle_state_publisher = self.create_lifecycle_publisher(
-            LifecycleState, '/pose_publisher/state', 10
+            LifecycleState, self.get_namespace() + '/pose_publisher/state', 10
         )
 
         # Transient Local QoS profile

@@ -16,6 +16,8 @@ def generate_launch_description():
     asv_params = os.path.join(pkg_share, 'config', 'asv_nav2_params.yaml')
     arov_urdf = os.path.join(pkg_share, 'models', 'arov_model.urdf')
     asv_urdf = os.path.join(pkg_share, 'models', 'asv_model.urdf')
+    arov_namespace = 'arov'
+    asv_namespace = 'asv'
 
     use_sim = LaunchConfiguration('use_sim')
 
@@ -70,20 +72,20 @@ def generate_launch_description():
             parameters=[{'use_sim': use_sim}]
         ),
         Node(
-            namespace='arov',
+            namespace=arov_namespace,
             package='asv_arov_navigation',
             executable='lifecycle_pose_publisher',
             parameters=[{'cmd_vel_topic': '/arov/cmd_vel', 'use_sim': use_sim}]
         ),
         Node(
-            namespace='asv',
+            namespace=asv_namespace,
             package='asv_arov_navigation',
             executable='lifecycle_pose_publisher',
             parameters=[{'cmd_vel_topic': '/asv/cmd_vel', 'use_sim': use_sim}]
         ),
         # Map server node
         Node(
-            namespace='arov',
+            namespace=arov_namespace,
             package='nav2_map_server',
             executable='map_server',
             name='map_server',
@@ -92,7 +94,7 @@ def generate_launch_description():
         ),
         # Nav2 Planner
         Node(
-            namespace='arov',
+            namespace=arov_namespace,
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
@@ -101,7 +103,7 @@ def generate_launch_description():
         ),
         # Nav2 Controller
         Node(
-            namespace='arov',
+            namespace=arov_namespace,
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
@@ -114,7 +116,7 @@ def generate_launch_description():
         ),
         # Nav2 Behaviors
         Node(
-            namespace='arov',
+            namespace=arov_namespace,
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
@@ -123,16 +125,16 @@ def generate_launch_description():
         ),
         # Nav2 BT Navigator
         Node(
-            namespace='arov',
+            namespace=arov_namespace,
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': False}]
+            parameters=[arov_params, {'map': map, 'use_sim_time': False}]
         ),
         # Map server node
         Node(
-            namespace='asv',
+            namespace=asv_namespace,
             package='nav2_map_server',
             executable='map_server',
             name='map_server',
@@ -141,7 +143,7 @@ def generate_launch_description():
         ),
         # Nav2 Planner
         Node(
-            namespace='asv',
+            namespace=asv_namespace,
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
@@ -150,7 +152,7 @@ def generate_launch_description():
         ),
         # Nav2 Controller
         Node(
-            namespace='asv',
+            namespace=asv_namespace,
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
@@ -163,7 +165,7 @@ def generate_launch_description():
         ),
         # Nav2 Behaviors
         Node(
-            namespace='asv',
+            namespace=asv_namespace,
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
@@ -172,48 +174,12 @@ def generate_launch_description():
         ),
         # Nav2 BT Navigator
         Node(
-            namespace='asv',
+            namespace=asv_namespace,
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': False}]
-        ),
-        Node(
-            namespace='arov',
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='static_tf_map_odom',
-            arguments=[
-                '--x', '0.0',
-                '--y', '0.0',
-                '--z', '0.0',
-                '--roll', '0.0',
-                '--pitch', '0.0',
-                '--yaw', '0.0',
-                '--frame-id', 'map',
-                '--child-frame-id', 'odom'
-            ],
-            output='screen',
-            parameters=[{'use_sim_time': False}]
-        ),
-        Node(
-            namespace='asv',
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='static_tf_map_odom',
-            arguments=[
-                '--x', '0.0',
-                '--y', '0.0',
-                '--z', '0.0',
-                '--roll', '0.0',
-                '--pitch', '0.0',
-                '--yaw', '0.0',
-                '--frame-id', 'map',
-                '--child-frame-id', 'odom'
-            ],
-            output='screen',
-            parameters=[{'use_sim_time': False}]
+            parameters=[asv_params, {'map': map, 'use_sim_time': False}]
         ),
         Node(
             namespace="arov",

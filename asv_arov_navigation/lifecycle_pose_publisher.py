@@ -15,6 +15,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from turtlesim.msg import Pose
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -29,6 +30,11 @@ class PosePublisher(LifecycleNode):
         self.odom_topic = self.get_namespace() + self.get_parameter('odom_topic').get_parameter_value().string_value
         self.pose_topic = self.get_namespace() + self.get_parameter('pose_topic').get_parameter_value().string_value
         self.use_sim = self.get_parameter('use_sim').get_parameter_value().bool_value
+
+        self.pose_subscriber = None
+
+        if self.use_sim :
+            self.pose_subscriber = self.create_subscription(Pose, self.get_namespace() + "/robot_pose", self.pose_callback, 1)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -52,6 +58,10 @@ class PosePublisher(LifecycleNode):
 
         self.timer = None
 
+    def pose_callback(self, data) :
+        self.x = data.x - 5
+        self.y = data.y - 5
+        self.yaw = data.theta
     
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')
@@ -69,6 +79,7 @@ class PosePublisher(LifecycleNode):
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Activating...')
+
         self.timer = self.create_timer(0.05, self.update_odometry)
 
         msg = LifecycleState()
@@ -95,31 +106,22 @@ class PosePublisher(LifecycleNode):
 
     def update_odometry(self):
         if self.use_sim :
+
             now = self.get_clock().now()
             dt = (now - self.last_time).nanoseconds * 1e-9
             self.last_time = now
 
-            vx = self.current_velocity.linear.x
-            vy = self.current_velocity.linear.y
-            vz = self.current_velocity.linear.z
-            vyaw = self.current_velocity.angular.z
-
-            dx = (vx * math.cos(self.yaw) - vy * math.sin(self.yaw)) * dt
-            dy = (vx * math.sin(self.yaw) + vy * math.cos(self.yaw)) * dt
-            dz = vz * dt
-            dyaw = vyaw * dt
-
-            self.x += dx
-            self.y += dy
-            self.z += dz
-            self.yaw += dyaw
-            self.yaw = math.atan2(math.sin(self.yaw), math.cos(self.yaw))
+            tf = TransformStamped()
+            tf.header.stamp = now.to_msg()
+            tf.header.frame_id = 'map'
+            tf.child_frame_id = self.get_namespace().strip('/') + '/odom'
+            self.tf_broadcaster.sendTransform(tf)
 
             odom = Odometry()
             sec, nsec = now.seconds_nanoseconds()
             odom.header.stamp = Time(sec=sec, nanosec=nsec)
-            odom.header.frame_id = 'odom'
-            odom.child_frame_id = 'base_link'
+            odom.header.frame_id = self.get_namespace().strip('/') + '/odom'
+            odom.child_frame_id = self.get_namespace().strip('/') + '/base_link'
 
             odom.pose.pose.position.x = self.x
             odom.pose.pose.position.y = self.y
@@ -131,8 +133,8 @@ class PosePublisher(LifecycleNode):
 
             tf = TransformStamped()
             tf.header.stamp = odom.header.stamp
-            tf.header.frame_id = 'odom'
-            tf.child_frame_id = 'base_link'
+            tf.header.frame_id = self.get_namespace().strip('/') + '/odom'
+            tf.child_frame_id = self.get_namespace().strip('/') + '/base_link'
             tf.transform.translation.x = self.x
             tf.transform.translation.y = self.y
             tf.transform.translation.z = self.z

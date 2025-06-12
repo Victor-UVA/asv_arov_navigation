@@ -179,6 +179,32 @@ def generate_launch_description():
             output='screen',
             parameters=[asv_params, {'use_sim_time': False}]
         ),
+        Node(
+            namespace="arov",
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_navigation',
+            output='screen',
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'bond_timeout': 0.0, # Fix to allow velocity integrator localization without bonding
+                'node_names': ['map_server', 'pose_publisher', 'controller_server', 'planner_server', 'behavior_server', 'bt_navigator']
+            }]
+        ),
+        Node(
+            namespace="asv",
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_navigation',
+            output='screen',
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'bond_timeout': 0.0, # Fix to allow velocity integrator localization without bonding
+                'node_names': ['map_server', 'pose_publisher', 'controller_server', 'planner_server', 'behavior_server', 'bt_navigator']
+            }]
+        )
     ])
 
     return ld

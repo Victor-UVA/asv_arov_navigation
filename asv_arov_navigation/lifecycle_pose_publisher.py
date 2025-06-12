@@ -15,6 +15,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from turtlesim.msg import Pose
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -29,6 +30,11 @@ class PosePublisher(LifecycleNode):
         self.odom_topic = self.get_namespace() + self.get_parameter('odom_topic').get_parameter_value().string_value
         self.pose_topic = self.get_namespace() + self.get_parameter('pose_topic').get_parameter_value().string_value
         self.use_sim = self.get_parameter('use_sim').get_parameter_value().bool_value
+
+        self.pose_subscriber = None
+
+        if self.use_sim :
+            self.pose_subscriber = self.create_subscription(Pose, self.get_namespace() + "/robot_pose", self.pose_callback, 1)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -52,6 +58,10 @@ class PosePublisher(LifecycleNode):
 
         self.timer = None
 
+    def pose_callback(self, data) :
+        self.x = data.x
+        self.y = data.y
+        self.yaw = data.yaw
     
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')
@@ -106,22 +116,6 @@ class PosePublisher(LifecycleNode):
             tf.header.frame_id = 'map'
             tf.child_frame_id = self.get_namespace().strip('/') + '/odom'
             self.tf_broadcaster.sendTransform(tf)
-
-            vx = self.current_velocity.linear.x
-            vy = self.current_velocity.linear.y
-            vz = self.current_velocity.linear.z
-            vyaw = self.current_velocity.angular.z
-
-            dx = (vx * math.cos(self.yaw) - vy * math.sin(self.yaw)) * dt
-            dy = (vx * math.sin(self.yaw) + vy * math.cos(self.yaw)) * dt
-            dz = vz * dt
-            dyaw = vyaw * dt
-
-            self.x += dx
-            self.y += dy
-            self.z += dz
-            self.yaw += dyaw
-            self.yaw = math.atan2(math.sin(self.yaw), math.cos(self.yaw))
 
             odom = Odometry()
             sec, nsec = now.seconds_nanoseconds()

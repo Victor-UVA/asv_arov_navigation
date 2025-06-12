@@ -83,7 +83,7 @@ def generate_launch_description():
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': 'false'}]
+            parameters=[arov_params, {'use_sim_time': False}]
         ),
         # Nav2 Controller
         Node(
@@ -92,7 +92,7 @@ def generate_launch_description():
             name='controller_server',
             output='screen',
             parameters=[arov_params, 
-                        {'use_sim_time': 'false',
+                        {'use_sim_time': False,
                             'current_goal_checker': 'simple_goal_checker',
                             'current_progress_checker': 'simple_progress_checker'
                         }]
@@ -103,7 +103,7 @@ def generate_launch_description():
             executable='behavior_server',
             name='behavior_server',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': 'false'}]
+            parameters=[arov_params, {'use_sim_time': False}]
         ),
         # Nav2 BT Navigator
         Node(
@@ -111,7 +111,7 @@ def generate_launch_description():
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': 'false'}]
+            parameters=[arov_params, {'use_sim_time': False}]
         ),
         # Map server node
         Node(
@@ -127,7 +127,7 @@ def generate_launch_description():
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': 'false'}]
+            parameters=[asv_params, {'use_sim_time': False}]
         ),
         # Nav2 Controller
         Node(
@@ -136,7 +136,7 @@ def generate_launch_description():
             name='controller_server',
             output='screen',
             parameters=[asv_params, 
-                        {'use_sim_time': 'false',
+                        {'use_sim_time': False,
                             'current_goal_checker': 'simple_goal_checker',
                             'current_progress_checker': 'simple_progress_checker'
                         }]
@@ -147,7 +147,7 @@ def generate_launch_description():
             executable='behavior_server',
             name='behavior_server',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': 'false'}]
+            parameters=[asv_params, {'use_sim_time': False}]
         ),
         # Nav2 BT Navigator
         Node(
@@ -155,7 +155,7 @@ def generate_launch_description():
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': 'false'}]
+            parameters=[asv_params, {'use_sim_time': False}]
         ),
     ])
 

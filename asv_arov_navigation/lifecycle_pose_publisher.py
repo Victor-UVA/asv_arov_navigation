@@ -69,6 +69,14 @@ class PosePublisher(LifecycleNode):
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Activating...')
+
+        if self.use_sim :
+            tf = TransformStamped()
+            tf.header.stamp = self.get_clock().now().to_msg()
+            tf.header.frame_id = 'map'
+            tf.child_frame_id = self.get_namespace().strip('/') + '/odom'
+            self.tf_broadcaster.sendTransform(tf)
+
         self.timer = self.create_timer(0.05, self.update_odometry)
 
         msg = LifecycleState()

@@ -89,9 +89,15 @@ class NavigationActionServer(Node):
             follower_nav.setInitialPose(follower_initial_pose)
 
             self.get_logger().info("Set initial poses")
+            if msg.request.mode == 1 :
+                leader_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
+                follower_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
+            else :
+                leader_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
+                follower_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
 
-            #leader_nav.waitUntilNav2Active(localizer="")
-            #follower_nav.waitUntilNav2Active(localizer="")
+            self.get_logger().info("Nav2 active")
+
             self.leader_task = leader_nav.goToPose(leader_target_pose)
 
             self.get_logger().info("Completed goToPose call")
@@ -122,7 +128,7 @@ class NavigationActionServer(Node):
                 initial_pose.pose.orientation = transform.transform.rotation
                 return initial_pose
             except TransformException as initial_pose_ex:
-                node.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
+                self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
         else :
             while True :
                 if (vehicle == 'asv' and self.asv_pose is not None) or (vehicle == 'arov' and self.arov_pose is not None) :

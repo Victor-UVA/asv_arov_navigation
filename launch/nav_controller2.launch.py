@@ -69,8 +69,21 @@ def generate_launch_description():
             executable='movement_server',
             parameters=[{'use_sim': use_sim}]
         ),
+        Node(
+            namespace='arov',
+            package='asv_arov_navigation',
+            executable='lifecycle_pose_publisher',
+            parameters=[{'cmd_vel_topic': '/arov/cmd_vel', 'use_sim': use_sim}]
+        ),
+        Node(
+            namespace='asv',
+            package='asv_arov_navigation',
+            executable='lifecycle_pose_publisher',
+            parameters=[{'cmd_vel_topic': '/asv/cmd_vel', 'use_sim': use_sim}]
+        ),
         # Map server node
         Node(
+            namespace='arov',
             package='nav2_map_server',
             executable='map_server',
             name='map_server',
@@ -79,42 +92,47 @@ def generate_launch_description():
         ),
         # Nav2 Planner
         Node(
+            namespace='arov',
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': 'false'}]
+            parameters=[arov_params, {'use_sim_time': False}]
         ),
         # Nav2 Controller
         Node(
+            namespace='arov',
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
             output='screen',
             parameters=[arov_params, 
-                        {'use_sim_time': 'false',
+                        {'use_sim_time': False,
                             'current_goal_checker': 'simple_goal_checker',
                             'current_progress_checker': 'simple_progress_checker'
                         }]
         ),
         # Nav2 Behaviors
         Node(
+            namespace='arov',
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': 'false'}]
+            parameters=[arov_params, {'use_sim_time': False}]
         ),
         # Nav2 BT Navigator
         Node(
+            namespace='arov',
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': 'false'}]
+            parameters=[arov_params, {'use_sim_time': False}]
         ),
         # Map server node
         Node(
+            namespace='asv',
             package='nav2_map_server',
             executable='map_server',
             name='map_server',
@@ -123,40 +141,106 @@ def generate_launch_description():
         ),
         # Nav2 Planner
         Node(
+            namespace='asv',
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': 'false'}]
+            parameters=[asv_params, {'use_sim_time': False}]
         ),
         # Nav2 Controller
         Node(
+            namespace='asv',
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
             output='screen',
             parameters=[asv_params, 
-                        {'use_sim_time': 'false',
+                        {'use_sim_time': False,
                             'current_goal_checker': 'simple_goal_checker',
                             'current_progress_checker': 'simple_progress_checker'
                         }]
         ),
         # Nav2 Behaviors
         Node(
+            namespace='asv',
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': 'false'}]
+            parameters=[asv_params, {'use_sim_time': False}]
         ),
         # Nav2 BT Navigator
         Node(
+            namespace='asv',
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': 'false'}]
+            parameters=[asv_params, {'use_sim_time': False}]
         ),
+        Node(
+            namespace='arov',
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_tf_map_odom',
+            arguments=[
+                '--x', '0.0',
+                '--y', '0.0',
+                '--z', '0.0',
+                '--roll', '0.0',
+                '--pitch', '0.0',
+                '--yaw', '0.0',
+                '--frame-id', 'map',
+                '--child-frame-id', 'odom'
+            ],
+            output='screen',
+            parameters=[{'use_sim_time': False}]
+        ),
+        Node(
+            namespace='asv',
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_tf_map_odom',
+            arguments=[
+                '--x', '0.0',
+                '--y', '0.0',
+                '--z', '0.0',
+                '--roll', '0.0',
+                '--pitch', '0.0',
+                '--yaw', '0.0',
+                '--frame-id', 'map',
+                '--child-frame-id', 'odom'
+            ],
+            output='screen',
+            parameters=[{'use_sim_time': False}]
+        ),
+        Node(
+            namespace="arov",
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_navigation',
+            output='screen',
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'bond_timeout': 0.0, # Fix to allow velocity integrator localization without bonding
+                'node_names': ['map_server', 'pose_publisher', 'controller_server', 'planner_server', 'behavior_server', 'bt_navigator']
+            }]
+        ),
+        Node(
+            namespace="asv",
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_navigation',
+            output='screen',
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'bond_timeout': 0.0, # Fix to allow velocity integrator localization without bonding
+                'node_names': ['map_server', 'pose_publisher', 'controller_server', 'planner_server', 'behavior_server', 'bt_navigator']
+            }]
+        )
     ])
 
     return ld

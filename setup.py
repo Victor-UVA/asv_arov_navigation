@@ -30,7 +30,8 @@ setup(
             'asv_arov_control_server = asv_arov_navigation.asv_arov_control_server:main',
             'asv_nav = asv_arov_navigation.asv_nav:main',
             'movement_server = asv_arov_navigation.movement_server:main',
-            'control_server_test = asv_arov_navigation.control_server_test:main'
+            'control_server_test = asv_arov_navigation.control_server_test:main',
+            'lifecycle_pose_publisher = asv_arov_navigation.lifecycle_pose_publisher:main'
         ],
     },
 )

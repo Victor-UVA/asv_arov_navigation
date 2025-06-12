@@ -81,98 +81,102 @@ def generate_launch_description():
             parameters=[{'cmd_vel_topic': '/asv/cmd_vel', 'use_sim': use_sim}]
         ),
         GroupAction(
-            # Map server node
-            PushRosNamespace('arov'),
-            Node(
-                package='nav2_map_server',
-                executable='map_server',
-                name='map_server',
-                output='screen',
-                parameters=[arov_params, {'yaml_filename': map}]
-            ),
-            # Nav2 Planner
-            Node(
-                package='nav2_planner',
-                executable='planner_server',
-                name='planner_server',
-                output='screen',
-                parameters=[arov_params, {'use_sim_time': False}]
-            ),
-            # Nav2 Controller
-            Node(
-                package='nav2_controller',
-                executable='controller_server',
-                name='controller_server',
-                output='screen',
-                parameters=[arov_params, 
-                            {'use_sim_time': False,
-                                'current_goal_checker': 'simple_goal_checker',
-                                'current_progress_checker': 'simple_progress_checker'
-                            }]
-            ),
-            # Nav2 Behaviors
-            Node(
-                package='nav2_behaviors',
-                executable='behavior_server',
-                name='behavior_server',
-                output='screen',
-                parameters=[arov_params, {'use_sim_time': False}]
-            ),
-            # Nav2 BT Navigator
-            Node(
-                package='nav2_bt_navigator',
-                executable='bt_navigator',
-                name='bt_navigator',
-                output='screen',
-                parameters=[arov_params, {'use_sim_time': False}]
-            )
+            actions=[
+                # Map server node
+                PushRosNamespace('arov'),
+                Node(
+                    package='nav2_map_server',
+                    executable='map_server',
+                    name='map_server',
+                    output='screen',
+                    parameters=[arov_params, {'yaml_filename': map}]
+                ),
+                # Nav2 Planner
+                Node(
+                    package='nav2_planner',
+                    executable='planner_server',
+                    name='planner_server',
+                    output='screen',
+                    parameters=[arov_params, {'use_sim_time': False}]
+                ),
+                # Nav2 Controller
+                Node(
+                    package='nav2_controller',
+                    executable='controller_server',
+                    name='controller_server',
+                    output='screen',
+                    parameters=[arov_params, 
+                                {'use_sim_time': False,
+                                    'current_goal_checker': 'simple_goal_checker',
+                                    'current_progress_checker': 'simple_progress_checker'
+                                }]
+                ),
+                # Nav2 Behaviors
+                Node(
+                    package='nav2_behaviors',
+                    executable='behavior_server',
+                    name='behavior_server',
+                    output='screen',
+                    parameters=[arov_params, {'use_sim_time': False}]
+                ),
+                # Nav2 BT Navigator
+                Node(
+                    package='nav2_bt_navigator',
+                    executable='bt_navigator',
+                    name='bt_navigator',
+                    output='screen',
+                    parameters=[arov_params, {'use_sim_time': False}]
+                )
+            ]
         ),
         GroupAction(
-            # Map server node
-            PushRosNamespace('asv'),
-            Node(
-                package='nav2_map_server',
-                executable='map_server',
-                name='map_server',
-                output='screen',
-                parameters=[arov_params, {'yaml_filename': map}]
-            ),
-            # Nav2 Planner
-            Node(
-                package='nav2_planner',
-                executable='planner_server',
-                name='planner_server',
-                output='screen',
-                parameters=[arov_params, {'use_sim_time': False}]
-            ),
-            # Nav2 Controller
-            Node(
-                package='nav2_controller',
-                executable='controller_server',
-                name='controller_server',
-                output='screen',
-                parameters=[arov_params, 
-                            {'use_sim_time': False,
-                                'current_goal_checker': 'simple_goal_checker',
-                                'current_progress_checker': 'simple_progress_checker'
-                            }]
-            ),
-            # Nav2 Behaviors
-            Node(
-                package='nav2_behaviors',
-                executable='behavior_server',
-                name='behavior_server',
-                output='screen',
-                parameters=[arov_params, {'use_sim_time': False}]
-            ),
-            # Nav2 BT Navigator
-            Node(
-                package='nav2_bt_navigator',
-                executable='bt_navigator',
-                name='bt_navigator',
-                output='screen',
-                parameters=[arov_params, {'use_sim_time': False}]
-            )
+            actions=[
+                # Map server node
+                PushRosNamespace('asv'),
+                Node(
+                    package='nav2_map_server',
+                    executable='map_server',
+                    name='map_server',
+                    output='screen',
+                    parameters=[arov_params, {'yaml_filename': map}]
+                ),
+                # Nav2 Planner
+                Node(
+                    package='nav2_planner',
+                    executable='planner_server',
+                    name='planner_server',
+                    output='screen',
+                    parameters=[arov_params, {'use_sim_time': False}]
+                ),
+                # Nav2 Controller
+                Node(
+                    package='nav2_controller',
+                    executable='controller_server',
+                    name='controller_server',
+                    output='screen',
+                    parameters=[arov_params, 
+                                {'use_sim_time': False,
+                                    'current_goal_checker': 'simple_goal_checker',
+                                    'current_progress_checker': 'simple_progress_checker'
+                                }]
+                ),
+                # Nav2 Behaviors
+                Node(
+                    package='nav2_behaviors',
+                    executable='behavior_server',
+                    name='behavior_server',
+                    output='screen',
+                    parameters=[arov_params, {'use_sim_time': False}]
+                ),
+                # Nav2 BT Navigator
+                Node(
+                    package='nav2_bt_navigator',
+                    executable='bt_navigator',
+                    name='bt_navigator',
+                    output='screen',
+                    parameters=[arov_params, {'use_sim_time': False}]
+                )
+            ]
         ),
         Node(
             namespace='arov',

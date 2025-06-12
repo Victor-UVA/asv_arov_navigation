@@ -53,10 +53,10 @@ class ControlState(Enum) :
     
 class ControlActionServer(Node) :
 
-    def __init__(self) :
+    def __init__(self, navigation_client, cleaning_client) :
         super().__init__('control_action_server')
-        # self.cleaning_action_client = CleaningActionClient()
-        self.navigation_action_client = NavigationActionClient('navigation_action_client')
+        # self.cleaning_action_client = cleaning_client
+        self.navigation_action_client = navigation_client
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
         self.declare_parameter('use_sim', False)
@@ -135,8 +135,11 @@ class ControlActionServer(Node) :
 
 def main(args=None) :
     rclpy.init()
-    action_server = ControlActionServer()
+    navigation_client = NavigationActionClient()
+    cleaning_client = CleaningActionClient()
+    action_server = ControlActionServer(navigation_client, cleaning_client)
     rclpy.spin(action_server)
 
 if __name__ == '__main__' :
     main()
+

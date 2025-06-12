@@ -19,7 +19,7 @@ from scipy.spatial.transform import Rotation
 class CleaningActionClient(Node) :
 
     def __init__(self) :
-        super().__init__(self.get_namespace() + 'cleaning_action_client')
+        super().__init__('cleaning_action_client')
         self.action_client = ActionClient(self, CleaningAction, 'cleaning_action')
 
     def send_goal(self, request) :
@@ -33,7 +33,7 @@ class CleaningActionClient(Node) :
 class NavigationActionClient(Node) :
 
     def __init__(self) :
-        super().__init__(self.get_namespace() + 'navigation_action_client')
+        super().__init__('navigation_action_client')
         self.action_client = ActionClient(self, NavigationAction, 'navigation_action')
 
     # stop is vehicle 0, ASV is vehicle 1, AROV is vehicle 2
@@ -54,7 +54,7 @@ class ControlState(Enum) :
 class ControlActionServer(Node) :
 
     def __init__(self) :
-        super().__init__(self.get_namespace() + 'control_action_server')
+        super().__init__('control_action_server')
         # self.cleaning_action_client = CleaningActionClient()
         self.navigation_action_client = NavigationActionClient()
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)

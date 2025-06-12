@@ -21,7 +21,7 @@ from turtlesim.msg import Pose
 
 class NavigationActionServer(Node):
     def __init__(self):
-        super().__init__(self.get_namespace() + 'navigation_action_server')
+        super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)

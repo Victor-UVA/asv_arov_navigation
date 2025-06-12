@@ -7,7 +7,7 @@
 # 6. planner_server
 # 7. behavior_server
 
-bt_navigator:
+arov/bt_navigator:
   ros__parameters:
     use_sim_time: false
     bt_xml_filename: "/opt/ros/jazzy/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
@@ -34,7 +34,7 @@ bt_navigator:
       #- nav2_back_up_action_bt_node
       #- nav2_clear_costmap_service_bt_node
 
-controller_server:
+arov/controller_server:
   ros__parameters:
     use_sim_time: false
     #FollowPath:
@@ -92,7 +92,7 @@ controller_server:
       required_movement_radius: 0.5
       movement_time_allowance: 10.0
 
-local_costmap:
+arov/local_costmap:
   local_costmap:
     ros__parameters:
       global_frame: odom
@@ -107,7 +107,7 @@ local_costmap:
       use_sim_time: False
       rolling_window: True
 
-global_costmap:
+arov/global_costmap:
   global_costmap:
     ros__parameters:
       global_frame: map
@@ -136,12 +136,12 @@ global_costmap:
       always_send_full_costmap: True
       service_introspection_mode: "disabled"
 
-map_server:
+arov/map_server:
   ros__parameters:
     use_sim_time: false
     yaml_filename: ""
 
-planner_server:
+arov/planner_server:
   ros__parameters:
     use_sim_time: false
     planner_plugins: ["GridBased"]
@@ -149,7 +149,7 @@ planner_server:
       plugin: "nav2_navfn_planner::NavfnPlanner"
       tolerance: 0.5
 
-behavior_server:
+arov/behavior_server:
   ros__parameters:
     local_costmap_topic: local_costmap/costmap_raw
     local_footprint_topic: local_costmap/published_footprint

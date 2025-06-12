@@ -16,8 +16,8 @@ def generate_launch_description():
     asv_params = os.path.join(pkg_share, 'config', 'asv_nav2_params.yaml')
     arov_urdf = os.path.join(pkg_share, 'models', 'arov_model.urdf')
     asv_urdf = os.path.join(pkg_share, 'models', 'asv_model.urdf')
-    arov_namespace = '/arov'
-    asv_namespace = '/asv'
+    arov_namespace = 'arov'
+    asv_namespace = 'asv'
 
     use_sim = LaunchConfiguration('use_sim')
 
@@ -130,7 +130,7 @@ def generate_launch_description():
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[arov_params, {'use_sim_time': False}]
+            parameters=[arov_params, {'map': map, 'use_sim_time': False}]
         ),
         # Map server node
         Node(
@@ -179,7 +179,7 @@ def generate_launch_description():
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[asv_params, {'use_sim_time': False}]
+            parameters=[asv_params, {'map': map, 'use_sim_time': False}]
         ),
         Node(
             namespace=arov_namespace,

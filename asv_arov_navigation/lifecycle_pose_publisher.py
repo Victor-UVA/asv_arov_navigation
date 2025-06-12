@@ -118,8 +118,8 @@ class PosePublisher(LifecycleNode):
             odom = Odometry()
             sec, nsec = now.seconds_nanoseconds()
             odom.header.stamp = Time(sec=sec, nanosec=nsec)
-            odom.header.frame_id = 'odom'
-            odom.child_frame_id = 'base_link'
+            odom.header.frame_id = self.get_namespace().strip('/') + '/odom'
+            odom.child_frame_id = self.get_namespace().strip('/') + '/base_link'
 
             odom.pose.pose.position.x = self.x
             odom.pose.pose.position.y = self.y
@@ -131,8 +131,8 @@ class PosePublisher(LifecycleNode):
 
             tf = TransformStamped()
             tf.header.stamp = odom.header.stamp
-            tf.header.frame_id = 'odom'
-            tf.child_frame_id = 'base_link'
+            tf.header.frame_id = self.get_namespace().strip('/') + '/odom'
+            tf.child_frame_id = self.get_namespace().strip('/') + '/base_link'
             tf.transform.translation.x = self.x
             tf.transform.translation.y = self.y
             tf.transform.translation.z = self.z

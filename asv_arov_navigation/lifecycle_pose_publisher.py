@@ -160,6 +160,7 @@ class PosePublisher(LifecycleNode):
                 0, 0, 0, 0, 0.01, 0,
                 0, 0, 0, 0, 0, 0.1
             ]
+            self.get_logger().info("Published pose")
             self.pose_pub.publish(pose)
         else :
             t = None

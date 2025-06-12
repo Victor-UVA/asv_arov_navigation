@@ -122,7 +122,7 @@ class NavigationActionServer(Node):
                 initial_pose.pose.orientation = transform.transform.rotation
                 return initial_pose
             except TransformException as initial_pose_ex:
-                node.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
+                self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
         else :
             while True :
                 if (vehicle == 'asv' and self.asv_pose is not None) or (vehicle == 'arov' and self.arov_pose is not None) :

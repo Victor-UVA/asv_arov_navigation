@@ -34,7 +34,7 @@ class PosePublisher(LifecycleNode):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         
         self._lifecycle_state_publisher = self.create_lifecycle_publisher(
-            LifecycleState, self.get_namespace().strip('/') + '/pose_publisher/state', 10
+            LifecycleState, self.get_namespace() + '/pose_publisher/state', 10
         )
 
         # Transient Local QoS profile

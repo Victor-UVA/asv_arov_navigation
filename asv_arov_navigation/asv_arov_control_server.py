@@ -56,7 +56,7 @@ class ControlActionServer(Node) :
     def __init__(self) :
         super().__init__('control_action_server')
         # self.cleaning_action_client = CleaningActionClient()
-        self.navigation_action_client = NavigationActionClient()
+        self.navigation_action_client = NavigationActionClient('navigation_action_client')
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
         self.declare_parameter('use_sim', False)

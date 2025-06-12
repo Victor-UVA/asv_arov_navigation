@@ -158,7 +158,7 @@ class PosePublisher(LifecycleNode):
         else :
             t = None
             try :
-                t = self.tf_buffer.lookup_transform(self.get_namespace(), 'map', self.get_clock().now())
+                t = self.tf_buffer.lookup_transform(self.get_namespace().strip('/') + '/base_link', 'map', self.get_clock().now())
             except TransformException as ex :
                 self.get_logger().info(f'Could not get robot pose as transform: {ex}')
             if t is not None :

@@ -182,42 +182,6 @@ def generate_launch_description():
             parameters=[asv_params, {'map': map, 'use_sim_time': False}]
         ),
         Node(
-            namespace=arov_namespace,
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='static_tf_map_odom',
-            arguments=[
-                '--x', '0.0',
-                '--y', '0.0',
-                '--z', '0.0',
-                '--roll', '0.0',
-                '--pitch', '0.0',
-                '--yaw', '0.0',
-                '--frame-id', 'map',
-                '--child-frame-id', 'odom'
-            ],
-            output='screen',
-            parameters=[{'use_sim_time': False}]
-        ),
-        Node(
-            namespace=asv_namespace,
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='static_tf_map_odom',
-            arguments=[
-                '--x', '0.0',
-                '--y', '0.0',
-                '--z', '0.0',
-                '--roll', '0.0',
-                '--pitch', '0.0',
-                '--yaw', '0.0',
-                '--frame-id', 'map',
-                '--child-frame-id', 'odom'
-            ],
-            output='screen',
-            parameters=[{'use_sim_time': False}]
-        ),
-        Node(
             namespace="arov",
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',

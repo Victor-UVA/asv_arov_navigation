@@ -109,7 +109,7 @@ class NavigationActionServer(Node):
                 else:
                     follower_current_pose = follower_nav.getFeedback().current_pose
                 follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
-                self.follower_task = self.follower_nav.goToPose(follower_target_pose)
+                self.follower_task = follower_nav.goToPose(follower_target_pose)
                 # time.sleep(1)   # update follower at 1Hz
                 if not follower_nav.isTaskComplete():
                     follower_running = True

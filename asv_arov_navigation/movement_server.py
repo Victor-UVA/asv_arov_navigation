@@ -90,11 +90,11 @@ class NavigationActionServer(Node):
 
             self.get_logger().info("Set initial poses")
             if msg.request.mode == 1 :
-                leader_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
-                follower_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
+                leader_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
+                follower_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
             else :
-                leader_nav.waitUntilNav2Active(localizer="arov/pose_publisher")
-                follower_nav.waitUntilNav2Active(localizer="asv/pose_publisher")
+                leader_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
+                follower_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
 
             self.get_logger().info("Nav2 active")
 
@@ -102,16 +102,16 @@ class NavigationActionServer(Node):
 
             self.get_logger().info("Completed goToPose call")
 
-            while not leader_nav.isTaskComplete(task = self.leader_task) or follower_running:
-                leader_current_pose = leader_nav.getFeedback(task = self.leader_task).current_pose
+            while not leader_nav.isTaskComplete() or follower_running:
+                leader_current_pose = leader_nav.getFeedback().current_pose
                 if not follower_running:
                     follower_current_pose = follower_initial_pose
                 else:
-                    follower_current_pose = follower_nav.getFeedback(task = self.leader_task).current_pose
+                    follower_current_pose = follower_nav.getFeedback().current_pose
                 follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
                 self.follower_task = self.follower_nav.goToPose(follower_target_pose)
                 # time.sleep(1)   # update follower at 1Hz
-                if not follower_nav.isTaskComplete(task = self.follower_task):
+                if not follower_nav.isTaskComplete():
                     follower_running = True
                 else:
                     follower_running = False
@@ -153,9 +153,9 @@ class NavigationActionServer(Node):
         y_transform = follower_pose.pose.position.y - leader_pose.pose.position.y
         xy_transform = np.array([x_transform, y_transform], dtype=np.float64)
         xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
-        follow_orientation = Rotation.from_quat(follower_pose.pose.orientation).as_euler("xyz", degrees=False)
+        follow_orientation = Rotation.from_quat([follower_pose.pose.orientation.x, follower_pose.pose.orientation.y, follower_pose.pose.orientation.z, follower_pose.pose.orientation.w]).as_euler("xyz", degrees=False)
         target_yaw = math.atan2(-y_transform, -x_transform)
-        target_orientation = Rotation.from_euler("xyz", [target_orientation[0], target_orientation[1], target_yaw], degrees=False).as_quat()
+        target_orientation = Rotation.from_euler("xyz", [follow_orientation[0], follow_orientation[1], target_yaw], degrees=False).as_quat()
 
         target_pose = PoseStamped()
         target_pose.header.frame_id = "map"

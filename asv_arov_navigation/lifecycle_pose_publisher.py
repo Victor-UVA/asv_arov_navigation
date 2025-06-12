@@ -166,10 +166,10 @@ class PosePublisher(LifecycleNode):
                 pose = PoseWithCovarianceStamped()
                 pose.header.frame_id = 'map'
                 pose.header.stamp = self.get_clock().now().to_msg()
-                pose.pose.pose.position.x = t.translation.x
-                pose.pose.pose.position.y = t.translation.y
-                pose.pose.pose.position.z = t.translation.z
-                pose.pose.pose.orientation = t.orientation
+                pose.pose.pose.position.x = t.transform.translation.x
+                pose.pose.pose.position.y = t.transform.translation.y
+                pose.pose.pose.position.z = t.transform.translation.z
+                pose.pose.pose.orientation = t.transform.orientation
                 pose.pose.covariance = [
                     0.05, 0, 0, 0, 0, 0,
                     0, 0.05, 0, 0, 0, 0,

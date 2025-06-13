@@ -1,7 +1,7 @@
 image: dog_pool.pgm
 mode: trinary     # white=open/black=obstacle/grey=unknown
 resolution: 0.01  # each pixel is 1cm
-origin: [-5.73, -3.11, 0]   # bottom left corner pos
+origin: [-3.11, -5.73, 0]   # bottom left corner pos
 negate: 0
 occupied_thresh: 0.8
 free_thresh: 0.1

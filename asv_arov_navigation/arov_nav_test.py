@@ -9,7 +9,7 @@ import os
 
 def main() -> None:
     rclpy.init()
-    nav = BasicNavigator()
+    nav = BasicNavigator(namespace="arov")
 
     costmap = os.path.join(get_package_share_directory('asv_arov_navigation'), 'config', 'arov_costmap_params.yaml')
     #nav.changeMap(costmap)
@@ -37,11 +37,11 @@ def main() -> None:
     goal_pose.pose.orientation.w = 1.0
 
     nav.setInitialPose(initial_pose)
-    nav.waitUntilNav2Active()
+    nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
     goto_task = nav.goToPose(goal_pose)
 
     i = 0
-    while not nav.isTaskComplete(task = goto_task):
+    while not nav.isTaskComplete():
         i += 1
         if i % 10 == 0:
             print('Moving to waypoint')
@@ -57,7 +57,7 @@ def main() -> None:
     else:
         print('Movement has an invalid return status!')
 
-    nav.lifecycleShutdown()
+    # nav.lifecycleShutdown()
 
 if __name__ == '__main__':
     main()

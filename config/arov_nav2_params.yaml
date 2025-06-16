@@ -61,11 +61,12 @@ arov/controller_server:
       gamma: 0.015
       prune_distance: 1.5 # default value
       vx_std: 0.2
-      vx_min: 0.1
+      vx_min: -0.5
       vx_max: 0.5
       ax_min: -2.0
       ax_max: 2.0
       vy_std: 0.2
+      vy_min: -0.5
       vy_max: 0.5
       ay_min: -2.0
       ay_max: 2.0

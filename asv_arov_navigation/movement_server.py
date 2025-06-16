@@ -16,7 +16,7 @@ from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Float32, Int32
 
-from turtlesim.msg import Pose
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 
 class NavigationActionServer(Node):
@@ -30,8 +30,8 @@ class NavigationActionServer(Node):
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
 
         if self.use_sim :
-            self.asv_pose_subscriber = self.create_subscription(Pose, '/asv/robot_pose', self.asv_pose_callback, 1)
-            self.arov_pose_subscriber = self.create_subscription(Pose, '/arov/robot_pose', self.arov_pose_callback, 1)
+            self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
+            self.arov_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/arov/amcl_pose', self.arov_pose_callback, 1)
 
         self.asv_pose = None
         self.arov_pose = None
@@ -42,10 +42,12 @@ class NavigationActionServer(Node):
         self.follower_task = None
 
     def asv_pose_callback(self, data) :
-        self.asv_pose = data
+        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
+        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
 
     def arov_pose_callback(self, data) :
-        self.arov_pose = data
+        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
+        self.arov_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
@@ -139,14 +141,14 @@ class NavigationActionServer(Node):
                     initial_pose.header.stamp.sec = now_sec
                     initial_pose.header.stamp.nanosec = now_nanosec
                     if vehicle == 'asv' :
-                        initial_pose.pose.position.x = self.asv_pose.x
-                        initial_pose.pose.position.y = self.asv_pose.y
-                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.asv_pose.theta], degrees=False).as_quat()
+                        initial_pose.pose.position.x = self.asv_pose[0]
+                        initial_pose.pose.position.y = self.asv_pose[1]
+                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.asv_pose[2]], degrees=False).as_quat()
                         initial_pose.pose.orientation.z = quat_orientation[2]
                     elif vehicle == 'arov' :
-                        initial_pose.pose.position.x = self.arov_pose.x
-                        initial_pose.pose.position.y = self.arov_pose.y
-                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.arov_pose.theta], degrees=False).as_quat()
+                        initial_pose.pose.position.x = self.arov_pose[0]
+                        initial_pose.pose.position.y = self.arov_pose[1]
+                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.arov_pose[2]], degrees=False).as_quat()
                         initial_pose.pose.orientation.z = quat_orientation[2]
                     return initial_pose
 
@@ -154,7 +156,10 @@ class NavigationActionServer(Node):
         x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x
         y_transform = follower_pose.pose.position.y - leader_pose.pose.position.y
         xy_transform = np.array([x_transform, y_transform], dtype=np.float64)
-        xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
+        magnitude = np.linalg.norm(xy_transform)
+        xy_transform_normalized = np.zeros(2, dtype=np.float64)
+        if magnitude != 0 :
+            xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
         follow_orientation = Rotation.from_quat([follower_pose.pose.orientation.x, follower_pose.pose.orientation.y, follower_pose.pose.orientation.z, follower_pose.pose.orientation.w]).as_euler("xyz", degrees=False)
         target_yaw = math.atan2(-y_transform, -x_transform)
         target_orientation = Rotation.from_euler("xyz", [follow_orientation[0], follow_orientation[1], target_yaw], degrees=False).as_quat()

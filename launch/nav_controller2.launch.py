@@ -182,7 +182,7 @@ def generate_launch_description():
             parameters=[asv_params, {'map': map, 'use_sim_time': False}]
         ),
         Node(
-            namespace="arov",
+            namespace=arov_namespace,
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',
             name='lifecycle_manager_navigation',
@@ -195,7 +195,7 @@ def generate_launch_description():
             }]
         ),
         Node(
-            namespace="asv",
+            namespace=asv_namespace,
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',
             name='lifecycle_manager_navigation',

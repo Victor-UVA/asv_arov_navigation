@@ -55,19 +55,18 @@ arov/controller_server:
       motion_model: "Omni"
       time_steps: 20
       model_dt: 0.1
-      batch_size: 2000
+      batch_size: 200
       iteration_count: 1
       temperature: 0.3
       gamma: 0.015
       prune_distance: 1.5 # default value
       vx_std: 0.2
-      vx_min: -0.5
-      vx_max: 0.5
+      vx_min: -1.7
+      vx_max: 1.7
       ax_min: -2.0
       ax_max: 2.0
       vy_std: 0.2
-      vy_min: -0.5
-      vy_max: 0.5
+      vy_max: 1.7
       ay_min: -2.0
       ay_max: 2.0
       wz_std: 0.2

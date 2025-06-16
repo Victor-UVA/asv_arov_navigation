@@ -8,7 +8,7 @@ from asv_arov_interfaces.action import ControlModeAction
 from asv_arov_interfaces.action import CleaningAction
 from asv_arov_interfaces.action import NavigationAction
 
-from turtlesim.msg import Pose
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -63,7 +63,7 @@ class ControlActionServer(Node) :
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
 
         if self.use_sim :
-            self.asv_pose_subscriber = self.create_subscription(Pose, '/asv/robot_pose', self.asv_pose_callback, 1)
+            self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
 
         self.asv_pose = None
 
@@ -81,7 +81,8 @@ class ControlActionServer(Node) :
         self.navigation_check = False
 
     def asv_pose_callback(self, data) :
-        self.asv_pose = data
+        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
+        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
         
     def execute_callback_async(self, goal_handle) :
         if goal_handle.request.mode == 1 :
@@ -103,9 +104,9 @@ class ControlActionServer(Node) :
                                 self.state = ControlState.NAVIGATING
                         elif self.asv_pose is not None :
                             self.asv_home_pose = [0, 0, 0]
-                            self.asv_home_pose[0] = self.asv_pose.x
-                            self.asv_home_pose[1] = self.asv_pose.y
-                            self.asv_home_pose[2] = self.asv_pose.theta
+                            self.asv_home_pose[0] = self.asv_pose[0]
+                            self.asv_home_pose[1] = self.asv_pose[1]
+                            self.asv_home_pose[2] = self.asv_pose[2]
                             self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.CLEANING :
                     # if not self.cleaning_check :
@@ -120,10 +121,10 @@ class ControlActionServer(Node) :
                         self.get_logger().info("prenav")
                         self.navigation_check = True
                         if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
-                            self.asv_target_pose_id == 0
-                        future = self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                        rclpy.spin_until_future_complete(self.navigation_action_client, future)
-                    elif self.navigation_future is not None and self.navigation_future.goal_reached :
+                            self.asv_target_pose_id = 0
+                        self.navigation_future = self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+                        rclpy.spin_until_future_complete(self.navigation_action_client, self.navigation_future)
+                    elif self.navigation_future is not None and self.navigation_future.done() and self.navigation_future.result() :
                         self.get_logger().info("postnav")
                         self.navigation_check = False
                         self.asv_target_pose_id += 1

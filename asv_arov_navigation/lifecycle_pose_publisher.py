@@ -16,7 +16,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from turtlesim.msg import Pose
+from geometry_msgs.msg import Twist
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -32,10 +32,10 @@ class PosePublisher(LifecycleNode):
         self.pose_topic = self.get_namespace() + self.get_parameter('pose_topic').get_parameter_value().string_value
         self.use_sim = self.get_parameter('use_sim').get_parameter_value().bool_value
 
-        self.pose_subscriber = None
+        self.cmd_vel_subscriber = None
 
         if self.use_sim :
-            self.pose_subscriber = self.create_subscription(Pose, self.get_namespace() + "/robot_pose", self.pose_callback, 1)
+            self.cmd_vel_subscriber = self.create_subscription(Twist, self.get_namespace() + "/cmd_vel", self.cmd_vel_callback, 1)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -58,11 +58,14 @@ class PosePublisher(LifecycleNode):
         self.current_velocity = Twist()
 
         self.timer = None
+        self.last_time = self.get_clock().now()
 
-    def pose_callback(self, data) :
-        self.x = data.x - 5
-        self.y = data.y - 5
-        self.yaw = data.theta
+    def cmd_vel_callback(self, data) :
+        dt = self.get_clock().now().seconds_nanoseconds()[0] - self.last_time.seconds_nanoseconds()[0]
+        self.x += data.linear.x * dt
+        self.y += data.linear.y * dt
+        self.z += data.linear.z * dt
+        self.yaw += data.angular.z * dt
     
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')
@@ -109,7 +112,6 @@ class PosePublisher(LifecycleNode):
         if self.use_sim :
 
             now = self.get_clock().now()
-            dt = (now - self.last_time).nanoseconds * 1e-9
             self.last_time = now
 
             tf = TransformStamped()

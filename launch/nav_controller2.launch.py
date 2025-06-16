@@ -23,45 +23,6 @@ def generate_launch_description():
 
     ld = LaunchDescription([
         Node(
-            package='turtlesim',
-            executable='turtlesim_node',
-            condition=IfCondition(use_sim),
-            remappings=[('/arov/pose', '/arov/robot_pose'), ('/asv/pose', '/asv/robot_pose')]
-        ),
-        ExecuteProcess(
-            cmd=[[
-                FindExecutable(name='ros2'),
-                " service call ",
-                "/kill ",
-                "turtlesim/srv/Kill ",
-                '"{name: turtle1}"',
-            ]],
-            shell=True,
-            condition=IfCondition(use_sim)
-        ),
-        ExecuteProcess(
-            cmd=[[
-                FindExecutable(name='ros2'),
-                " service call ",
-                "/spawn ",
-                "turtlesim/srv/Spawn ",
-                '"{x: 5.0, y: 5.0, theta: 0.0, name: arov}"',
-            ]],
-            shell=True,
-            condition=IfCondition(use_sim)
-        ),
-        ExecuteProcess(
-            cmd=[[
-                FindExecutable(name='ros2'),
-                " service call ",
-                "/spawn ",
-                "turtlesim/srv/Spawn ",
-                '"{x: 6.0, y: 5.0, theta: 0.0, name: asv}"',
-            ]],
-            shell=True,
-            condition=IfCondition(use_sim)
-        ),
-        Node(
             package='asv_arov_navigation',
             executable='asv_arov_control_server',
             parameters=[{'use_sim': use_sim}]

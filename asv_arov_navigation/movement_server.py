@@ -53,6 +53,7 @@ class NavigationActionServer(Node):
         if msg.request.mode == 0:   # stop all tasks
             self.arov_nav.cancelTask()
             self.asv_nav.cancelTask()
+            result =
 
         elif (msg.request.mode == 1) or (msg.request.mode == 2):
             if msg.request.mode == 1:   # ASV leads, AROV follows
@@ -117,6 +118,52 @@ class NavigationActionServer(Node):
                     follower_running = True
                 else:
                     follower_running = False
+
+        elif(msg.request.mode == 3) or (msg.request.mode == 4):
+            if (msg.request.mode == 3): # only ASV moves
+                leader_nav = self.asv_nav
+                leader_initial_pose = self._get_initial_pose('asv')
+            else:   # only AROV moves
+                leader_nav = self.arov_nav
+                leader_initial_pose = self._get_initial_pose('arov')
+
+            leader_target_pose = PoseStamped()
+            leader_target_pose.header.frame_id = "map"
+            (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
+            leader_target_pose.header.stamp.sec = now_sec
+            leader_target_pose.header.stamp.nanosec = now_nanosec
+            leader_target_pose.pose.position.x = msg.request.goal[0]
+            leader_target_pose.pose.position.y = msg.request.goal[1]
+            leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
+            orientation = Rotation.from_euler("xyz", [0, 0, msg.request.goal[2]], degrees=False).as_quat()
+            leader_target_pose.pose.orientation.x = orientation[0]
+            leader_target_pose.pose.orientation.y = orientation[1]
+            leader_target_pose.pose.orientation.z = orientation[2]
+            leader_target_pose.pose.orientation.w = orientation[3]
+            self.get_logger().info("Defined target pose")
+
+            leader_nav.setInitialPose(leader_initial_pose)
+            self.get_logger().info("Set initial poses")
+
+            if msg.request.mode == 3:
+                leader_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
+            else:
+                leader_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
+            self.get_logger().info("Nav2 active")
+
+            self.leader_task = leader_nav.goToPose(leader_target_pose)
+            self.get_logger().info("Completed goToPose call")
+
+        asv_result = self.asv_nav.getResult()
+        # arov_result = self.arov_nav.getResult()
+        result = NavigationAction.Result()
+        if asv_result == TaskResult.SUCCEEDED:
+            result.goal_reached = True
+            return result
+        else:
+            result.goal_reached = False
+            return result
+
 
     def _get_initial_pose(self, vehicle):
         initial_pose = PoseStamped()

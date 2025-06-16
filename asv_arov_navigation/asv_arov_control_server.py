@@ -124,7 +124,7 @@ class ControlActionServer(Node) :
                             self.asv_target_pose_id = 0
                         self.navigation_future = self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
                         rclpy.spin_until_future_complete(self.navigation_action_client, self.navigation_future)
-                    elif self.navigation_future is not None and self.navigation_future.done() and self.navigation_future.result() :
+                    elif self.navigation_future is not None and self.navigation_future.result() is not None :
                         self.get_logger().info("postnav")
                         self.navigation_check = False
                         self.asv_target_pose_id += 1

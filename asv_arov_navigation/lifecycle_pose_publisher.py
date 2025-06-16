@@ -62,10 +62,16 @@ class PosePublisher(LifecycleNode):
 
     def cmd_vel_callback(self, data) :
         dt = self.get_clock().now().seconds_nanoseconds()[0] - self.last_time.seconds_nanoseconds()[0]
-        self.x += data.linear.x * dt
-        self.y += data.linear.y * dt
-        self.z += data.linear.z * dt
-        self.yaw += data.angular.z * dt
+        if self.get_namespace() == "/arov" :
+            self.x += (data.linear.x * math.cos(self.yaw) + data.linear.y * math.sin(self.yaw)) * dt
+            self.y += (data.linear.x * math.sin(self.yaw) + data.linear.y * math.cos(self.yaw)) * dt
+            self.z += data.linear.z * dt
+            self.yaw += data.angular.z * dt
+        elif self.get_namespace() == "/asv" :
+            self.x += data.linear.x * math.cos(self.yaw) * dt
+            self.y += data.linear.x * math.sin(self.yaw) * dt
+            self.z += data.linear.z * dt
+            self.yaw += data.angular.z * dt
     
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')

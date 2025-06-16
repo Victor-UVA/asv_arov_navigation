@@ -31,3 +31,5 @@ def main(args=None) :
     future = guidance_client.send_goal([pose1, pose2, pose3, pose4], ["vertical", "right", "vertical"])
     rclpy.spin_until_future_complete(guidance_client, future)
 
+if __name__ == '__main__' :
+    main()

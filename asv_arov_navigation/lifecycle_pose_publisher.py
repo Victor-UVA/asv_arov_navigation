@@ -16,7 +16,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from geomtry_msgs.msg import Twist
+from geometry_msgs.msg import Twist
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -58,12 +58,10 @@ class PosePublisher(LifecycleNode):
         self.current_velocity = Twist()
 
         self.timer = None
-        sec, nsec = self.get_clock().now().seconds_nanoseconds()
-        self.last_time = sec
+        self.last_time = self.get_clock().now()
 
     def cmd_vel_callback(self, data) :
-        sec, nsec = self.get_clock().now().seconds_nanoseconds()
-        dt = sec - self.last_time
+        dt = self.get_clock().now().seconds_nanoseconds()[0] - self.last_time.seconds_nanoseconds()[0]
         self.x += data.linear.x * dt
         self.y += data.linear.y * dt
         self.z += data.linear.z * dt

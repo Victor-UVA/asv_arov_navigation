@@ -52,8 +52,7 @@ def main() -> None:
     elif result == TaskResult.CANCELED:
         print('Movement cancelled')
     elif result == TaskResult.FAILED:
-        (error_code, error_msg) = nav.getTaskError()
-        print('Movement failed!{error_code}:{error_msg}')
+        print('Movement failed!')
     else:
         print('Movement has an invalid return status!')
 

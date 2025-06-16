@@ -1,6 +1,7 @@
 import rclpy
 from enum import Enum
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 
@@ -35,6 +36,8 @@ class NavigationActionClient(Node) :
     def __init__(self) :
         super().__init__('navigation_action_client')
         self.action_client = ActionClient(self, NavigationAction, 'navigation_action')
+        self.done = False
+        self.result = None
 
     # stop is vehicle 0, ASV is vehicle 1, AROV is vehicle 2
     def send_goal(self, goal, vehicle) :
@@ -44,7 +47,19 @@ class NavigationActionClient(Node) :
 
         self.action_client.wait_for_server()
 
-        return self.action_client.send_goal_async(goal_msg)
+        self.send_goal_future = self.action_client.send_goal_async(goal_msg)
+        self.send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def goal_response_callback(self, future) :
+        self.get_logger().info("Goal response")
+        goal_handle = future.result()
+        self.get_result_future = goal_handle.get_result_async()
+        self.get_result_future.add_done_callback(self.get_result_callback)
+
+    def get_result_callback(self, future) :
+        self.get_logger().info("Get result")
+        self.done = True
+        self.result = future.result().result
     
 class ControlState(Enum) :
     STARTING = 0
@@ -122,13 +137,15 @@ class ControlActionServer(Node) :
                         self.navigation_check = True
                         if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                             self.asv_target_pose_id = 0
-                        self.navigation_future = self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                        rclpy.spin_until_future_complete(self.navigation_action_client, self.navigation_future)
-                    elif self.navigation_future is not None and self.navigation_future.result() is not None :
+                        self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+                        # rclpy.spin_until_future_complete(self.navigation_action_client, future)
+                    elif self.navigation_action_client.done :
                         self.get_logger().info("postnav")
+                        self.navigation_action_client.done = False
                         self.navigation_check = False
                         self.asv_target_pose_id += 1
                         self.state = ControlState.CLEANING
+                    # self.get_logger().info(f'{self.navigation_future.result().get_result_async().done()}')
         elif goal_handle.mode == 0 :
             future = self.navigation_action_client.send_goal(self.asv_home_pose, 1)
             rclpy.spin_until_future_complete(self.navigation_action_client, future)
@@ -139,7 +156,11 @@ def main(args=None) :
     navigation_client = NavigationActionClient()
     cleaning_client = CleaningActionClient()
     action_server = ControlActionServer(navigation_client, cleaning_client)
-    rclpy.spin(action_server)
+    executor = MultiThreadedExecutor()
+    executor.add_node(navigation_client)
+    executor.add_node(cleaning_client)
+    executor.add_node(action_server)
+    executor.spin()
 
 if __name__ == '__main__' :
     main()

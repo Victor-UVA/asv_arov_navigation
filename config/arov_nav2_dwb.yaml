@@ -63,25 +63,25 @@ arov/controller_server:
       stateful: True  # check xy again after rotating to pose
 
     FollowPath:
-      plugin: "dwb_core::DWBLocalPLanner"
+      plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
       short_circuit_trajectory_evalaution: True
       stateful: True
       # kinematics
       min_vel_x: -1.7
       max_vel_x: 1.7
-      acc_lim_x: 0.5
-      decel_lim_x: -0.5
+      acc_lim_x: 1.7
+      decel_lim_x: -1.7
       min_vel_y: -1.7
       max_vel_y: 1.7
-      acc_lim_y: 0.5
-      decel_lim_y: -0.5
+      acc_lim_y: 1.7
+      decel_lim_y: -1.7
       min_speed_xy: -1.7
       max_speed_xy: 1.7
-      min_speed_theta: -1.5
-      max_vel_theta: 1.5
-      acc_lim_theta: 2.5
-      decel_lim_theta: -2.5
+      min_speed_theta: -1.7
+      max_vel_theta: 1.7
+      acc_lim_theta: 1.7
+      decel_lim_theta: -1.7
       # xytheta iterator
       vx_samples: 20
       vy_samples: 20

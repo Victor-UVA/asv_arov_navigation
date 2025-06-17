@@ -64,14 +64,16 @@ arov/controller_server:
 
     FollowPath:
       plugin: "nav2_rotation_shim_controller::RotationShimController"
-      primary_controller: "dwb_core::DWBLocalPLanner"
+      primary_controller: "dwb_core::DWBLocalPlanner"
       #-- rotation shim controller --#
-      angular_dist_threshold: 1.6057  # will maintain heading for poses within 92deg of current heading
-      angular_disengage_threshold: 0.785
+      angular_dist_threshold: 0.6 #1.6057  # will maintain heading for poses within 92deg of current heading
+      angular_disengage_threshold: 0.3
       forward_sampling_distance: 1.0
       rotate_to_heading_angular_vel: 1.5
       max_angular_accel: 2.0
       simulate_ahead_time: 1.5
+      rotate_to_goal_heading: False
+      use_path_orientations: False
 
       #-- DWB controller --#
       debug_trajectory_details: True

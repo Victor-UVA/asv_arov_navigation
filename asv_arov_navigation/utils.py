@@ -1,5 +1,5 @@
 from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Orientation
+from geometry_msgs.msg import Quaternion
 from scipy.spatial.transform import Rotation
 import numpy as np
 
@@ -21,7 +21,7 @@ def build_pose_stamped(time, frame_id, pose, orientation=None) :
 
 def quaternion_from_euler(rpy) :
     quat = Rotation.from_euler("xyz", rpy, degrees=False).as_quat()
-    out = Orientation()
+    out = Quaternion()
     out.x = quat[0]
     out.y = quat[1]
     out.z = quat[2]

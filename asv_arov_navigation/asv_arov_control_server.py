@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
-from robot_guidance import ApriltagNavigationClient
+from robot_guidance.apriltag_navigation_client import ApriltagNavigationClient
 
 from asv_arov_interfaces.action import ControlModeAction
 from asv_arov_interfaces.action import NavigationAction
@@ -62,17 +62,17 @@ class ControlActionServer(Node) :
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
         self.declare_parameter('use_sim', False)
-        self.declare_parameter('cleaning_routine_depth', 0)
-        self.declare_parameter('cleaning_routine_width', 0)
-        self.declare_parameter('cleaning_routine_strip_width', 0)
-        self.declare_parameter('cleaning_routine_apriltag_offset', 0)
-        self.declare_parameter('cleaning_routine_apriltag_clearance', 0)
+        self.declare_parameter('cleaning_routine_depth', 0.0)
+        self.declare_parameter('cleaning_routine_width', 0.0)
+        self.declare_parameter('cleaning_routine_strip_width', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_offset', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_clearance', 0.0)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
-        self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().float_value
-        self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().float_value
-        self.cleaning_routine_strip_width: float = self.get_parameter('cleaning_routine_strip_width').get_parameter_value().float_value
-        self.cleaning_routine_apriltag_offset: float = self.get_parameter('cleaning_routine_apriltag_offset').get_parameter_value().float_value
-        self.cleaning_routine_apriltag_clearance: float = self.get_parameter('cleaning_routine_apriltag_clearance').get_parameter_value().float_value
+        self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().double_value
+        self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().double_value
+        self.cleaning_routine_strip_width: float = self.get_parameter('cleaning_routine_strip_width').get_parameter_value().double_value
+        self.cleaning_routine_apriltag_offset: float = self.get_parameter('cleaning_routine_apriltag_offset').get_parameter_value().double_value
+        self.cleaning_routine_apriltag_clearance: float = self.get_parameter('cleaning_routine_apriltag_clearance').get_parameter_value().double_value
 
         if self.use_sim :
             self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
@@ -95,7 +95,7 @@ class ControlActionServer(Node) :
         self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
         self.fence_frame_cleaning_routine_directions = []
 
-        for i in range(self.cleaning_routine_apriltag_offset, math.ceil((self.cleaning_routine_width + self.cleaning_routine_apriltag_offset) / self.cleaning_routine_strip_width)) :
+        for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
             strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))

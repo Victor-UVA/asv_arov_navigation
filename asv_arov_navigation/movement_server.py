@@ -4,7 +4,6 @@ import rclpy
 import math
 import numpy as np
 
-from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from asv_arov_interfaces.action import NavigationAction
@@ -14,10 +13,9 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
-from std_msgs.msg import Bool, Float32, Int32
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
-
+from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
 
 class NavigationActionServer(Node):
     def __init__(self):
@@ -42,12 +40,10 @@ class NavigationActionServer(Node):
         self.follower_task = None
 
     def asv_pose_callback(self, data) :
-        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
-        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
+        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
 
     def arov_pose_callback(self, data) :
-        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
-        self.arov_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
+        self.arov_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
@@ -71,19 +67,7 @@ class NavigationActionServer(Node):
             leader_current_pose = None
             follower_current_pose = None
             follower_running = False
-            leader_target_pose = PoseStamped()
-            leader_target_pose.header.frame_id = "map"
-            (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
-            leader_target_pose.header.stamp.sec = now_sec
-            leader_target_pose.header.stamp.nanosec = now_nanosec
-            leader_target_pose.pose.position.x = msg.request.goal[0]
-            leader_target_pose.pose.position.y = msg.request.goal[1]
-            leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
-            orientation = Rotation.from_euler("xyz", [0, 0, msg.request.goal[2]], degrees=False).as_quat()
-            leader_target_pose.pose.orientation.x = orientation[0]
-            leader_target_pose.pose.orientation.y = orientation[1]
-            leader_target_pose.pose.orientation.z = orientation[2]
-            leader_target_pose.pose.orientation.w = orientation[3]
+            leader_target_pose = build_pose_stamped(self.get_clock().now(), "map", [msg.request.goal[0], msg.request.goal[1], 0, 0, 0, msg.request.goal[2]])
 
             self.get_logger().info("Defined target pose")
 
@@ -127,19 +111,7 @@ class NavigationActionServer(Node):
                 leader_nav = self.arov_nav
                 leader_initial_pose = self._get_initial_pose('arov')
 
-            leader_target_pose = PoseStamped()
-            leader_target_pose.header.frame_id = "map"
-            (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
-            leader_target_pose.header.stamp.sec = now_sec
-            leader_target_pose.header.stamp.nanosec = now_nanosec
-            leader_target_pose.pose.position.x = msg.request.goal[0]
-            leader_target_pose.pose.position.y = msg.request.goal[1]
-            leader_target_pose.pose.position.z = leader_initial_pose.pose.position.z
-            orientation = Rotation.from_euler("xyz", [0, 0, msg.request.goal[2]], degrees=False).as_quat()
-            leader_target_pose.pose.orientation.x = orientation[0]
-            leader_target_pose.pose.orientation.y = orientation[1]
-            leader_target_pose.pose.orientation.z = orientation[2]
-            leader_target_pose.pose.orientation.w = orientation[3]
+            leader_target_pose = build_pose_stamped(self.get_clock().now(), "map", [msg.request.goal[0], msg.request.goal[1], 0, 0, 0, msg.request.goal[2]])
             self.get_logger().info("Defined target pose")
 
             leader_nav.setInitialPose(leader_initial_pose)
@@ -173,33 +145,16 @@ class NavigationActionServer(Node):
             while True :
                 try:
                     transform = self.tf_buffer.lookup_transform(vehicle + '/base_link', 'map', rclpy.time.Time())
-                    initial_pose.header.frame_id = 'map'
-                    initial_pose.header.stamp = self.get_clock().now().to_msg()
-                    initial_pose.pose.position.x = transform.transform.translation.x
-                    initial_pose.pose.position.y = transform.transform.translation.y
-                    initial_pose.pose.position.z = transform.transform.translation.z
-                    initial_pose.pose.orientation = transform.transform.rotation
-                    return initial_pose
+                    return build_pose_stamped(self.get_clock().now(), "map", [transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z], transform.transform.rotation)
                 except TransformException as initial_pose_ex:
                     self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
         else :
             while True :
                 if (vehicle == 'asv' and self.asv_pose is not None) or (vehicle == 'arov' and self.arov_pose is not None) :
-                    initial_pose.header.frame_id = 'map'
-                    (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
-                    initial_pose.header.stamp.sec = now_sec
-                    initial_pose.header.stamp.nanosec = now_nanosec
                     if vehicle == 'asv' :
-                        initial_pose.pose.position.x = self.asv_pose[0]
-                        initial_pose.pose.position.y = self.asv_pose[1]
-                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.asv_pose[2]], degrees=False).as_quat()
-                        initial_pose.pose.orientation.z = quat_orientation[2]
-                    elif vehicle == 'arov' :
-                        initial_pose.pose.position.x = self.arov_pose[0]
-                        initial_pose.pose.position.y = self.arov_pose[1]
-                        quat_orientation = Rotation.from_euler("xyz", [0, 0, self.arov_pose[2]], degrees=False).as_quat()
-                        initial_pose.pose.orientation.z = quat_orientation[2]
-                    return initial_pose
+                        return build_pose_stamped(self.get_clock().now(), "map", [self.asv_pose[0], self.asv_pose[1], 0, 0, 0, self.asv_pose[2]])
+                    else :
+                        return build_pose_stamped(self.get_clock().now(), "map", [self.arov_pose[0], self.arov_pose[1], 0, 0, 0, self.arov_pose[2]])
 
     def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):
         x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x
@@ -211,22 +166,8 @@ class NavigationActionServer(Node):
             xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
         follow_orientation = Rotation.from_quat([follower_pose.pose.orientation.x, follower_pose.pose.orientation.y, follower_pose.pose.orientation.z, follower_pose.pose.orientation.w]).as_euler("xyz", degrees=False)
         target_yaw = math.atan2(-y_transform, -x_transform)
-        target_orientation = Rotation.from_euler("xyz", [follow_orientation[0], follow_orientation[1], target_yaw], degrees=False).as_quat()
 
-        target_pose = PoseStamped()
-        target_pose.header.frame_id = "map"
-        (now_sec, now_nanosec) = self.get_clock().now().seconds_nanoseconds()
-        target_pose.header.stamp.sec = now_sec
-        target_pose.header.stamp.nanosec = now_nanosec
-        target_pose.pose.position.x = leader_pose.pose.position.x + xy_transform_normalized[0] * follower_clearance
-        target_pose.pose.position.y = leader_pose.pose.position.y + xy_transform_normalized[1] * follower_clearance
-        target_pose.pose.position.z = follower_pose.pose.position.z
-        target_pose.pose.orientation.x = target_orientation[0]
-        target_pose.pose.orientation.y = target_orientation[1]
-        target_pose.pose.orientation.z = target_orientation[2]
-        target_pose.pose.orientation.w = target_orientation[3]
-
-        return target_pose
+        return build_pose_stamped(self.get_clock().now(), "map", [leader_pose.pose.position.x + xy_transform_normalized[0] * follower_clearance, leader_pose.pose.position.y + xy_transform_normalized[1] * follower_clearance, follower_pose.pose.position.z, follow_orientation[0], follow_orientation[1], target_yaw])
 
 def main() -> None:
     rclpy.init()

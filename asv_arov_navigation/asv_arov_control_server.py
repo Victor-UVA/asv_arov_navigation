@@ -1,12 +1,13 @@
 import rclpy
+import math
 from enum import Enum
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
+from robot_guidance.apriltag_navigation_client import ApriltagNavigationClient
 
 from asv_arov_interfaces.action import ControlModeAction
-from asv_arov_interfaces.action import CleaningAction
 from asv_arov_interfaces.action import NavigationAction
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -15,21 +16,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from scipy.spatial.transform import Rotation
-
-class CleaningActionClient(Node) :
-
-    def __init__(self) :
-        super().__init__('cleaning_action_client')
-        self.action_client = ActionClient(self, CleaningAction, 'cleaning_action')
-
-    def send_goal(self, request) :
-        goal_msg = CleaningAction.Goal()
-        goal_msg.request = request
-
-        self.action_client.wait_for_server()
-
-        return self.action_client.send_goal_async(goal_msg)
+from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
     
 class NavigationActionClient(Node) :
 
@@ -70,12 +57,22 @@ class ControlActionServer(Node) :
 
     def __init__(self, navigation_client, cleaning_client) :
         super().__init__('control_action_server')
-        # self.cleaning_action_client = cleaning_client
+        self.cleaning_action_client = cleaning_client
         self.navigation_action_client = navigation_client
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
         self.declare_parameter('use_sim', False)
+        self.declare_parameter('cleaning_routine_depth', 0.0)
+        self.declare_parameter('cleaning_routine_width', 0.0)
+        self.declare_parameter('cleaning_routine_strip_width', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_offset', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_clearance', 0.0)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
+        self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().double_value
+        self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().double_value
+        self.cleaning_routine_strip_width: float = self.get_parameter('cleaning_routine_strip_width').get_parameter_value().double_value
+        self.cleaning_routine_apriltag_offset: float = self.get_parameter('cleaning_routine_apriltag_offset').get_parameter_value().double_value
+        self.cleaning_routine_apriltag_clearance: float = self.get_parameter('cleaning_routine_apriltag_clearance').get_parameter_value().double_value
 
         if self.use_sim :
             self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
@@ -95,9 +92,19 @@ class ControlActionServer(Node) :
         self.navigation_future = None
         self.navigation_check = False
 
+        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
+        self.fence_frame_cleaning_routine_directions = []
+
+        for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
+            previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
+            strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_directions.append("vertical")
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_directions.append("right")
+
     def asv_pose_callback(self, data) :
-        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
-        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
+        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
         
     def execute_callback_async(self, goal_handle) :
         if goal_handle.request.mode == 1 :
@@ -114,8 +121,7 @@ class ControlActionServer(Node) :
                                 self.asv_home_pose = [0, 0, 0]
                                 self.asv_home_pose[0] = t.transform.translation.x
                                 self.asv_home_pose[1] = t.transform.translation.y
-                                rpy = Rotation.from_quat([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]).as_euler("xyz", degrees=False)
-                                self.asv_home_pose[2] = rpy[2]
+                                self.asv_home_pose[2] = euler_from_quaternion(t.transform.rotation)[2]
                                 self.state = ControlState.NAVIGATING
                         elif self.asv_pose is not None :
                             self.asv_home_pose = [0, 0, 0]
@@ -126,8 +132,7 @@ class ControlActionServer(Node) :
                 elif self.state == ControlState.CLEANING :
                     # if not self.cleaning_check :
                     #     self.cleaning_check = True
-                    #     self.cleaning_future = self.cleaning_action_client.send_goal(None)
-                    #     rclpy.spin_until_future_complete(self.cleaning_action_client, self.cleaning_future)
+                    #     self.cleaning_action_client.send_goal(None)
                     # elif self.cleaning_future is not None and self.cleaning_future.goal_reached :
                     #     self.cleaning_check = False
                         self.state = ControlState.NAVIGATING
@@ -138,7 +143,6 @@ class ControlActionServer(Node) :
                         if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                             self.asv_target_pose_id = 0
                         self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                        # rclpy.spin_until_future_complete(self.navigation_action_client, future)
                     elif self.navigation_action_client.done :
                         self.get_logger().info("postnav")
                         self.navigation_action_client.done = False
@@ -154,7 +158,7 @@ class ControlActionServer(Node) :
 def main(args=None) :
     rclpy.init()
     navigation_client = NavigationActionClient()
-    cleaning_client = CleaningActionClient()
+    cleaning_client = ApriltagNavigationClient()
     action_server = ControlActionServer(navigation_client, cleaning_client)
     executor = MultiThreadedExecutor()
     executor.add_node(navigation_client)

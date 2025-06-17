@@ -1,11 +1,7 @@
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, GroupAction
-from launch_ros.descriptions import ComposableNode, ParameterFile
-from launch.substitutions import PythonExpression, LaunchConfiguration, FindExecutable, Command
-from launch_ros.actions import LoadComposableNodes, Node
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import IfCondition
-from nav2_common.launch import RewrittenYaml
 
 import os
 
@@ -14,6 +10,7 @@ def generate_launch_description():
     map = os.path.join(pkg_share, 'config', 'dog_pool.yaml')
     arov_params = os.path.join(pkg_share, 'config', 'arov_nav2_params.yaml')
     asv_params = os.path.join(pkg_share, 'config', 'asv_nav2_params.yaml')
+    control_server_params = os.path.join(pkg_share, 'config', 'control_server_params.yaml')
     arov_urdf = os.path.join(pkg_share, 'models', 'arov_model.urdf')
     asv_urdf = os.path.join(pkg_share, 'models', 'asv_model.urdf')
     arov_namespace = 'arov'
@@ -25,7 +22,7 @@ def generate_launch_description():
         Node(
             package='asv_arov_navigation',
             executable='asv_arov_control_server',
-            parameters=[{'use_sim': use_sim}]
+            parameters=[control_server_params, {'use_sim': use_sim}]
         ),
         Node(
             package='asv_arov_navigation',

@@ -53,7 +53,6 @@ class NavigationActionServer(Node):
         if msg.request.mode == 0:   # stop all tasks
             self.arov_nav.cancelTask()
             self.asv_nav.cancelTask()
-            result =
 
         elif (msg.request.mode == 1) or (msg.request.mode == 2):
             if msg.request.mode == 1:   # ASV leads, AROV follows
@@ -105,13 +104,14 @@ class NavigationActionServer(Node):
 
             self.get_logger().info("Completed goToPose call")
 
-            while not leader_nav.isTaskComplete() or follower_running:
+            while not leader_nav.isTaskComplete(): # or follower_running:
                 leader_current_pose = leader_nav.getFeedback().current_pose
                 if not follower_running:
                     follower_current_pose = follower_initial_pose
                 else:
                     follower_current_pose = follower_nav.getFeedback().current_pose
                 follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
+                follower_nav.cancelTask()
                 self.follower_task = follower_nav.goToPose(follower_target_pose)
                 # time.sleep(1)   # update follower at 1Hz
                 if not follower_nav.isTaskComplete():
@@ -153,6 +153,8 @@ class NavigationActionServer(Node):
 
             self.leader_task = leader_nav.goToPose(leader_target_pose)
             self.get_logger().info("Completed goToPose call")
+
+        self.get_logger().info("Finishing navigation task")
 
         asv_result = self.asv_nav.getResult()
         # arov_result = self.arov_nav.getResult()

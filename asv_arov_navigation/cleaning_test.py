@@ -1,6 +1,6 @@
 import rclpy
-from robot_guidance.robot_guidance import ApriltagNavigationClient
-from robot_guidance.robot_guidance_interfaces.action import NavigateAprilTags
+from robot_guidance_pkg import ApriltagNavigationClient
+from robot_guidance_interfaces.action import NavigateAprilTags
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Header
 from scipy.spatial.transform import Rotation

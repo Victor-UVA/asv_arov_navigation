@@ -113,7 +113,7 @@ class NavigationActionServer(Node):
 
             leader_target_pose = build_pose_stamped(self.get_clock().now(), "map", [msg.request.goal[0], msg.request.goal[1], 0, 0, 0, msg.request.goal[2]])
             self.get_logger().info("Defined target pose")
-
+            self.get_logger().info(f'{leader_initial_pose}')
             leader_nav.setInitialPose(leader_initial_pose)
             self.get_logger().info("Set initial poses")
 

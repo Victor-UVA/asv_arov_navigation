@@ -34,7 +34,7 @@ class NavigationActionServer(Node):
         self.asv_pose = None
         self.arov_pose = None
 
-        self.arov_nav = BasicNavigator(namespace="arov")
+        self.arov_nav = BasicNavigator(node_name="navigation_basic_navigator", namespace="arov")
         self.asv_nav = BasicNavigator(namespace="asv")
         self.leader_task = None
         self.follower_task = None

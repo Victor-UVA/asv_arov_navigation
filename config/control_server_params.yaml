@@ -1,0 +1,6 @@
+control_action_server:
+  ros__parameters:
+    # TODO: convert to meters
+    cleaning_routine_depth: 6.0
+    cleaning_routine_width: 8.0
+    cleaning_routine_strip_width: 1.0

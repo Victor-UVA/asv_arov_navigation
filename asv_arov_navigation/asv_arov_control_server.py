@@ -1,4 +1,5 @@
 import rclpy
+import math
 from enum import Enum
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
@@ -7,7 +8,6 @@ from rclpy.action import ActionClient
 from robot_guidance import ApriltagNavigationClient
 
 from asv_arov_interfaces.action import ControlModeAction
-from asv_arov_interfaces.action import NavigateAprilTags
 from asv_arov_interfaces.action import NavigationAction
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -17,6 +17,8 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 from scipy.spatial.transform import Rotation
+
+from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
     
 class NavigationActionClient(Node) :
 
@@ -62,7 +64,13 @@ class ControlActionServer(Node) :
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
         self.declare_parameter('use_sim', False)
+        self.declare_parameter('cleaning_routine_depth', 0)
+        self.declare_parameter('cleaning_routine_width', 0)
+        self.declare_parameter('cleaning_routine_strip_width', 0)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
+        self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().float_value
+        self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().float_value
+        self.cleaning_routine_strip_width: float = self.get_parameter('cleaning_routine_strip_width').get_parameter_value().float_value
 
         if self.use_sim :
             self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
@@ -82,9 +90,19 @@ class ControlActionServer(Node) :
         self.navigation_future = None
         self.navigation_check = False
 
+        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
+        self.fence_frame_cleaning_routine_directions = []
+
+        for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
+            previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
+            strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [0, previous_pos.y, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_directions.append("vertical")
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [0, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_directions.append("right")
+
     def asv_pose_callback(self, data) :
-        rpy = Rotation.from_quat([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]).as_euler("xyz", degrees=False)
-        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, rpy[2]]
+        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
         
     def execute_callback_async(self, goal_handle) :
         if goal_handle.request.mode == 1 :
@@ -101,8 +119,7 @@ class ControlActionServer(Node) :
                                 self.asv_home_pose = [0, 0, 0]
                                 self.asv_home_pose[0] = t.transform.translation.x
                                 self.asv_home_pose[1] = t.transform.translation.y
-                                rpy = Rotation.from_quat([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]).as_euler("xyz", degrees=False)
-                                self.asv_home_pose[2] = rpy[2]
+                                self.asv_home_pose[2] = euler_from_quaternion(t.transform.rotation)[2]
                                 self.state = ControlState.NAVIGATING
                         elif self.asv_pose is not None :
                             self.asv_home_pose = [0, 0, 0]

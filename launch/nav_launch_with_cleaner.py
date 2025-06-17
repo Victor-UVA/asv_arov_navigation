@@ -11,7 +11,7 @@ def generate_launch_description() :
     nav_pkg_share = FindPackageShare(package='asv_arov_navigation').find('asv_arov_navigation')
     cleaning_pkg_share = FindPackageShare(package='robot_guidance').find('robot_guidance')
 
-    use_sim = LaunchConfiguration('use_sim')
+    use_sim = LaunchConfiguration('use_sim', False)
 
     return LaunchDescription([
         IncludeLaunchDescription(

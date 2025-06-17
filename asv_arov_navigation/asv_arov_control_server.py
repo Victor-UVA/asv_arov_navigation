@@ -16,8 +16,6 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from scipy.spatial.transform import Rotation
-
 from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
     
 class NavigationActionClient(Node) :
@@ -67,10 +65,14 @@ class ControlActionServer(Node) :
         self.declare_parameter('cleaning_routine_depth', 0)
         self.declare_parameter('cleaning_routine_width', 0)
         self.declare_parameter('cleaning_routine_strip_width', 0)
+        self.declare_parameter('cleaning_routine_apriltag_offset', 0)
+        self.declare_parameter('cleaning_routine_apriltag_clearance', 0)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
         self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().float_value
         self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().float_value
         self.cleaning_routine_strip_width: float = self.get_parameter('cleaning_routine_strip_width').get_parameter_value().float_value
+        self.cleaning_routine_apriltag_offset: float = self.get_parameter('cleaning_routine_apriltag_offset').get_parameter_value().float_value
+        self.cleaning_routine_apriltag_clearance: float = self.get_parameter('cleaning_routine_apriltag_clearance').get_parameter_value().float_value
 
         if self.use_sim :
             self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
@@ -90,15 +92,15 @@ class ControlActionServer(Node) :
         self.navigation_future = None
         self.navigation_check = False
 
-        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
+        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
         self.fence_frame_cleaning_routine_directions = []
 
-        for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
+        for i in range(self.cleaning_routine_apriltag_offset, math.ceil((self.cleaning_routine_width + self.cleaning_routine_apriltag_offset) / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
             strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [0, previous_pos.y, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [0, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
             self.fence_frame_cleaning_routine_directions.append("right")
 
     def asv_pose_callback(self, data) :

@@ -4,7 +4,7 @@ import rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
-from geometry_msgs.msg import Twist, Quaternion, TransformStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Twist, Quaternion, TransformStamped, PoseWithCovarianceStamped, Pose
 from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
 from builtin_interfaces.msg import Time
@@ -32,8 +32,6 @@ class PosePublisher(LifecycleNode):
         self.pose_topic = self.get_namespace() + self.get_parameter('pose_topic').get_parameter_value().string_value
         self.use_sim = self.get_parameter('use_sim').get_parameter_value().bool_value
 
-        self.cmd_vel_subscriber = None
-
         if self.use_sim :
             self.cmd_vel_subscriber = self.create_subscription(Twist, self.get_namespace() + "/cmd_vel", self.cmd_vel_callback, 1)
 
@@ -54,14 +52,18 @@ class PosePublisher(LifecycleNode):
         self.tf_broadcaster = TransformBroadcaster(self)
 
         self.x = self.y = self.z = self.yaw = 0.0
-        self.last_time = None
         self.current_velocity = Twist()
 
         self.timer = None
-        self.last_time = self.get_clock().now()
+        self.last_time = None
 
     def cmd_vel_callback(self, data) :
-        dt = self.get_clock().now().seconds_nanoseconds()[0] - self.last_time.seconds_nanoseconds()[0]
+        now = self.get_clock().now()
+        if self.last_time is not None :
+            dt = (self.get_clock().now() - self.last_time).to_msg().sec
+        else :
+            dt = 0
+        self.last_time = now
         if self.get_namespace() == "/arov" :
             self.x += (data.linear.x * math.cos(self.yaw) + data.linear.y * math.sin(self.yaw)) * dt
             self.y += (data.linear.x * math.sin(self.yaw) + data.linear.y * math.cos(self.yaw)) * dt
@@ -84,7 +86,7 @@ class PosePublisher(LifecycleNode):
         msg.id = LifecycleState.PRIMARY_STATE_INACTIVE
         msg.label = 'inactive'
         self._lifecycle_state_publisher.publish(msg)
-        self.last_time = self.get_clock().now()
+        # self.last_time = self.get_clock().now()
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
@@ -118,7 +120,7 @@ class PosePublisher(LifecycleNode):
         if self.use_sim :
 
             now = self.get_clock().now()
-            self.last_time = now
+            #self.last_time = now
 
             tf = TransformStamped()
             tf.header.stamp = now.to_msg()

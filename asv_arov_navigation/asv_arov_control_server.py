@@ -83,13 +83,12 @@ class ControlActionServer(Node) :
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.asv_target_poses = [[0, 0, 0], [0, -3, 0]]
+        self.arov_fence_frame_pairs = [("", ""), ("", "")]
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
 
         self.state = ControlState.STARTING
-        self.cleaning_future = None
         self.cleaning_check = False
-        self.navigation_future = None
         self.navigation_check = False
 
         self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
@@ -130,11 +129,12 @@ class ControlActionServer(Node) :
                             self.asv_home_pose[2] = self.asv_pose[2]
                             self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.CLEANING :
-                    # if not self.cleaning_check :
-                    #     self.cleaning_check = True
-                    #     self.cleaning_action_client.send_goal(None)
-                    # elif self.cleaning_future is not None and self.cleaning_future.goal_reached :
-                    #     self.cleaning_check = False
+                    if not self.cleaning_check :
+                        self.cleaning_check = True
+                        self.cleaning_action_client.send_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
+                    elif self.cleaning_action_client.done :
+                        self.cleaning_check = False
+                        self.cleaning_action_client.done = False
                         self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.NAVIGATING :
                     if not self.navigation_check :

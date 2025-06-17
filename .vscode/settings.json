@@ -5,7 +5,7 @@
         "/home/maddy/ros2_ws/install/bluerov_interfaces/lib/python3.12/site-packages",
         "/home/maddy/ros2_ws/install/asv_arov_router/lib/python3.12/site-packages",
         "/home/maddy/ros2_ws/install/asv_arov_localization/lib/python3.12/site-packages",
-        "/home/maddy/ros2_ws/install/asv_arov_interfaces/lib/python3.12/site-packages",
+        "/home/malori/ros2_ws/install/asv_arov_interfaces/lib/python3.12/site-packages",
         "/home/maddy/ros2_ws/install/aquaculture/lib/python3.12/site-packages",
         "/opt/ros/jazzy/lib/python3.12/site-packages"
     ],
@@ -15,7 +15,7 @@
         "/home/maddy/ros2_ws/install/bluerov_interfaces/lib/python3.12/site-packages",
         "/home/maddy/ros2_ws/install/asv_arov_router/lib/python3.12/site-packages",
         "/home/maddy/ros2_ws/install/asv_arov_localization/lib/python3.12/site-packages",
-        "/home/maddy/ros2_ws/install/asv_arov_interfaces/lib/python3.12/site-packages",
+        "/home/malori/ros2_ws/install/asv_arov_interfaces/lib/python3.12/site-packages",
         "/home/maddy/ros2_ws/install/aquaculture/lib/python3.12/site-packages",
         "/opt/ros/jazzy/lib/python3.12/site-packages"
     ]

@@ -115,7 +115,7 @@ arov/local_costmap:
     ros__parameters:
       global_frame: arov/odom
       robot_base_frame: arov/base_link
-      robot_radius: 0.35
+      robot_radius: 0.4
       height: 3
       width: 3
       resolution: 0.01
@@ -130,7 +130,7 @@ arov/global_costmap:
     ros__parameters:
       global_frame: map
       robot_base_frame: arov/base_link
-      robot_radius: 0.35
+      robot_radius: 0.4
       resolution: 0.01
       update_frequency: 5.0
       publish_frequency: 5.0

@@ -11,7 +11,7 @@ from builtin_interfaces.msg import Time
 import rclpy.time
 from tf2_ros import TransformBroadcaster
 from lifecycle_msgs.msg import State as LifecycleState
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -57,10 +57,10 @@ class PosePublisher(LifecycleNode):
         self.timer = None
         self.last_time = None
 
-    def cmd_vel_callback(self, data) :
+    def cmd_vel_callback(self, data):
         now = self.get_clock().now()
         if self.last_time is not None :
-            dt = (self.get_clock().now() - self.last_time).to_msg().sec
+            dt = (self.get_clock().now() - self.last_time).to_msg().nanosec / 1e9
         else :
             dt = 0
         self.last_time = now
@@ -129,8 +129,7 @@ class PosePublisher(LifecycleNode):
             self.tf_broadcaster.sendTransform(tf)
 
             odom = Odometry()
-            sec, nsec = now.seconds_nanoseconds()
-            odom.header.stamp = Time(sec=sec, nanosec=nsec)
+            odom.header.stamp = now.to_msg()
             odom.header.frame_id = self.get_namespace().strip('/') + '/odom'
             odom.child_frame_id = self.get_namespace().strip('/') + '/base_link'
 
@@ -194,7 +193,7 @@ class PosePublisher(LifecycleNode):
 def main(args=None):
     rclpy.init(args=args)
     node = PosePublisher()
-    executor = MultiThreadedExecutor()
+    executor = SingleThreadedExecutor()
     executor.add_node(node)
     try:
         executor.spin()

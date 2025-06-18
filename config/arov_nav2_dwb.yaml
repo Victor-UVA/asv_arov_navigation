@@ -42,9 +42,9 @@ arov/controller_server:
     controller_frequency: 20.0
     publish_zero_velocity: True
     costmap_update_timeout: 0.6 # after 3 failed updates timeout
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001
-    min_theta_velocity_threshold: 0.001
+    min_x_velocity_threshold: 0.1
+    min_y_velocity_threshold: 0.1
+    min_theta_velocity_threshold: 0.1
     failure_tolerance: 0.3      # after fails for 0.3s then fail pathing action
 
     progress_checker_plugins: [ "progress_checker" ]
@@ -58,8 +58,8 @@ arov/controller_server:
 
     general_goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.1
+      yaw_goal_tolerance: 0.1
       stateful: True  # check xy again after rotating to pose
 
     FollowPath:
@@ -87,9 +87,9 @@ arov/controller_server:
       vy_samples: 20
       vtheta_samples: 20
       # trajectory generator
-      sim_time: 1.5 # time to simulate path by
-      time_granularity: 0.5
-      linear_granularity: 0.5
+      sim_time: 0.5 # time to simulate path by
+      time_granularity: 0.1
+      linear_granularity: 0.1
       angular_granularity: 0.025
       include_last_point: True
       limit_vel_cmd_in_traj: True # uses sampled velocity instead of commanded velocity for limits

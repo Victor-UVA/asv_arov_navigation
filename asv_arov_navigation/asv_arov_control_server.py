@@ -2,7 +2,7 @@ import rclpy
 import math
 from enum import Enum
 from rclpy.node import Node
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 from robot_guidance.apriltag_navigation_client import ApriltagNavigationClient
@@ -107,60 +107,61 @@ class ControlActionServer(Node) :
         
     def execute_callback_async(self, goal_handle) :
         if goal_handle.request.mode == 1 :
-            while True :
-                if self.state == ControlState.STARTING :
-                    if self.asv_home_pose is None :
-                        if not self.use_sim :
-                            t = None
-                            try :
-                                t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
-                            except TransformException as ex :
-                                self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
-                            if t is not None :
-                                self.asv_home_pose = [0, 0, 0]
-                                self.asv_home_pose[0] = t.transform.translation.x
-                                self.asv_home_pose[1] = t.transform.translation.y
-                                self.asv_home_pose[2] = euler_from_quaternion(t.transform.rotation)[2]
-                                self.state = ControlState.NAVIGATING
-                        elif self.asv_pose is not None :
-                            self.asv_home_pose = [0, 0, 0]
-                            self.asv_home_pose[0] = self.asv_pose[0]
-                            self.asv_home_pose[1] = self.asv_pose[1]
-                            self.asv_home_pose[2] = self.asv_pose[2]
-                            self.state = ControlState.NAVIGATING
-                elif self.state == ControlState.CLEANING :
-                    if not self.cleaning_check :
-                        self.cleaning_check = True
-                        self.cleaning_action_client.send_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
-                    elif self.cleaning_action_client.done :
-                        self.cleaning_check = False
-                        self.cleaning_action_client.done = False
-                        self.state = ControlState.NAVIGATING
-                elif self.state == ControlState.NAVIGATING :
-                    if not self.navigation_check :
-                        self.get_logger().info("prenav")
-                        self.navigation_check = True
-                        if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
-                            self.asv_target_pose_id = 0
-                        self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                    elif self.navigation_action_client.done :
-                        self.get_logger().info("postnav")
-                        self.navigation_action_client.done = False
-                        self.navigation_check = False
-                        self.asv_target_pose_id += 1
-                        self.state = ControlState.CLEANING
-                    # self.get_logger().info(f'{self.navigation_future.result().get_result_async().done()}')
+            self.create_timer(0.05, self.run_state_machine)
         elif goal_handle.mode == 0 :
             future = self.navigation_action_client.send_goal(self.asv_home_pose, 1)
             rclpy.spin_until_future_complete(self.navigation_action_client, future)
             return True
+
+    def run_state_machine(self) :
+        if self.state == ControlState.STARTING :
+            if self.asv_home_pose is None :
+                if not self.use_sim :
+                    t = None
+                    try :
+                        t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
+                    except TransformException as ex :
+                        self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
+                    if t is not None :
+                        self.asv_home_pose = [0, 0, 0]
+                        self.asv_home_pose[0] = t.transform.translation.x
+                        self.asv_home_pose[1] = t.transform.translation.y
+                        self.asv_home_pose[2] = euler_from_quaternion(t.transform.rotation)[2]
+                        self.state = ControlState.NAVIGATING
+            elif self.asv_pose is not None :
+                self.asv_home_pose = [0, 0, 0]
+                self.asv_home_pose[0] = self.asv_pose[0]
+                self.asv_home_pose[1] = self.asv_pose[1]
+                self.asv_home_pose[2] = self.asv_pose[2]
+                self.state = ControlState.NAVIGATING
+        elif self.state == ControlState.CLEANING :
+            if not self.cleaning_check :
+                self.cleaning_check = True
+                self.cleaning_action_client.send_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
+            elif self.cleaning_action_client.done :
+                self.cleaning_check = False
+                self.cleaning_action_client.done = False
+                self.state = ControlState.NAVIGATING
+        elif self.state == ControlState.NAVIGATING :
+            if not self.navigation_check :
+                self.get_logger().info("prenav")
+                self.navigation_check = True
+                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
+                    self.asv_target_pose_id = 0
+                self.navigation_action_client.send_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+            elif self.navigation_action_client.done :
+                self.get_logger().info("postnav")
+                self.navigation_action_client.done = False
+                self.navigation_check = False
+                self.asv_target_pose_id += 1
+                self.state = ControlState.CLEANING
 
 def main(args=None) :
     rclpy.init()
     navigation_client = NavigationActionClient()
     cleaning_client = ApriltagNavigationClient()
     action_server = ControlActionServer(navigation_client, cleaning_client)
-    executor = MultiThreadedExecutor()
+    executor = SingleThreadedExecutor()
     executor.add_node(navigation_client)
     executor.add_node(cleaning_client)
     executor.add_node(action_server)

@@ -66,11 +66,7 @@ def generate_launch_description():
             executable='controller_server',
             name='controller_server',
             output='screen',
-            parameters=[arov_params, 
-                        {'use_sim_time': False,
-                            'current_goal_checker': 'simple_goal_checker',
-                            'current_progress_checker': 'simple_progress_checker'
-                        }]
+            parameters=[arov_params, {'use_sim_time': False,}]
         ),
         # Nav2 Behaviors
         Node(
@@ -115,11 +111,7 @@ def generate_launch_description():
             executable='controller_server',
             name='controller_server',
             output='screen',
-            parameters=[asv_params, 
-                        {'use_sim_time': False,
-                            'current_goal_checker': 'simple_goal_checker',
-                            'current_progress_checker': 'simple_progress_checker'
-                        }]
+            parameters=[asv_params, {'use_sim_time': False,}]
         ),
         # Nav2 Behaviors
         Node(

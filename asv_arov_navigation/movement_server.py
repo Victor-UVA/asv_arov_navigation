@@ -39,7 +39,7 @@ class NavigationActionServer(Node):
         self.leader_task = None
         self.follower_task = None
 
-        self._loop_rate = self.create_rate(1.0, self.get_clock())
+        self._loop_rate = self.create_rate(0.2, self.get_clock())
 
     def asv_pose_callback(self, data) :
         self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]

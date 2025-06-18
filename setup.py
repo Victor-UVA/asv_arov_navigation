@@ -26,6 +26,8 @@ setup(
     entry_points={
         'console_scripts': [
             'arov_nav_test = asv_arov_navigation.arov_nav_test:main',
+            'arov_nav_test2 = asv_arov_navigation.arov_nav_test2:main',
+            'asv_nav_test = asv_arov_navigation.asv_nav_test:main',
             'arov_nav = asv_arov_navigation.arov_nav:main',
             'asv_arov_control_server = asv_arov_navigation.asv_arov_control_server:main',
             'asv_nav = asv_arov_navigation.asv_nav:main',

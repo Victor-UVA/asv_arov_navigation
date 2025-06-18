@@ -39,6 +39,8 @@ class NavigationActionServer(Node):
         self.leader_task = None
         self.follower_task = None
 
+        self._loop_rate = self.create_rate(1.0, self.get_clock())
+
     def asv_pose_callback(self, data) :
         self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
 
@@ -97,7 +99,7 @@ class NavigationActionServer(Node):
                 follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
                 follower_nav.cancelTask()
                 self.follower_task = follower_nav.goToPose(follower_target_pose)
-                # time.sleep(1)   # update follower at 1Hz
+                self._loop_rate.sleep()
                 if not follower_nav.isTaskComplete():
                     follower_running = True
                 else:

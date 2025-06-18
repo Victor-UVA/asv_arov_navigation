@@ -122,12 +122,12 @@ class ControlActionServer(Node) :
                                 self.asv_home_pose[1] = t.transform.translation.y
                                 self.asv_home_pose[2] = euler_from_quaternion(t.transform.rotation)[2]
                                 self.state = ControlState.NAVIGATING
-                    elif self.asv_pose is not None :
-                        self.asv_home_pose = [0, 0, 0]
-                        self.asv_home_pose[0] = self.asv_pose[0]
-                        self.asv_home_pose[1] = self.asv_pose[1]
-                        self.asv_home_pose[2] = self.asv_pose[2]
-                        self.state = ControlState.NAVIGATING
+                        elif self.asv_pose is not None :
+                            self.asv_home_pose = [0, 0, 0]
+                            self.asv_home_pose[0] = self.asv_pose[0]
+                            self.asv_home_pose[1] = self.asv_pose[1]
+                            self.asv_home_pose[2] = self.asv_pose[2]
+                            self.state = ControlState.NAVIGATING
                 elif self.state == ControlState.CLEANING :
                     if not self.cleaning_check :
                         self.cleaning_check = True
@@ -210,4 +210,3 @@ def main(args=None) :
 
 if __name__ == '__main__' :
     main()
-

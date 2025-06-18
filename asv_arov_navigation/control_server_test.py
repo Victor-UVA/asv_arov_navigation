@@ -4,7 +4,6 @@ from rclpy.node import Node
 
 from asv_arov_interfaces.action import ControlModeAction
 
-
 class ControlActionClient(Node):
 
     def __init__(self):

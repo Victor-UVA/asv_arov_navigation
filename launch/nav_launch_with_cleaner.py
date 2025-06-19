@@ -9,7 +9,6 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description() :
 
     nav_pkg_share = FindPackageShare(package='asv_arov_navigation').find('asv_arov_navigation')
-    cleaning_pkg_share = FindPackageShare(package='robot_guidance').find('robot_guidance')
 
     use_sim = LaunchConfiguration('use_sim')
 
@@ -24,7 +23,7 @@ def generate_launch_description() :
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                os.path.join(cleaning_pkg_share, 'launch', 'cleaner_launch.py')
+                os.path.join(nav_pkg_share, 'launch', 'cleaner_launch.py')
             )
         )
     ])

@@ -30,6 +30,7 @@ setup(
             'asv_nav_test = asv_arov_navigation.asv_nav_test:main',
             'arov_nav = asv_arov_navigation.arov_nav:main',
             'asv_arov_control_server = asv_arov_navigation.asv_arov_control_server:main',
+            'arov_navigation_server = asv_arov_navigation.arov_navigation_server:main',
             'asv_nav = asv_arov_navigation.asv_nav:main',
             'movement_server = asv_arov_navigation.movement_server:main',
             'control_server_test = asv_arov_navigation.control_server_test:main',

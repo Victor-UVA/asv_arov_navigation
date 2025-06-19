@@ -98,7 +98,7 @@ class NavigationActionServer(Node):
                 follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
                 follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
                 while not follower_future.done() or (follower_future.done() and not follower_future.result().get_result_async().done()):
-                    print('Moving to waypoint')
+                    self.get_logger().info('Moving to waypoint')
             follower_success = follower_future.result().goal_reached
 
         else:

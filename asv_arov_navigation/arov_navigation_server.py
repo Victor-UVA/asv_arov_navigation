@@ -13,6 +13,7 @@ class AROVNavigationServer(Node) :
         self.navigator.waitUntilNav2Active(localizer="/arov/pose_publisher")
 
     def execute_callback_async(self, goal_handle) :
+        self.get_logger().info("Received goal")
         if goal_handle.request.mode == 1 :
             self.navigator.setInitialPose(goal_handle.request.init_pose)
             self.navigator.goToPose(goal_handle.request.goal)
@@ -23,7 +24,7 @@ class AROVNavigationServer(Node) :
         else :
             self.navigator.cancelTask()
         result = AROVCommandAction.Result()
-        result.goal_reached = True if self.goal_handle.request.mode == 0 or self.navigator.getResult().error_code == 0 else False
+        result.goal_reached = True if goal_handle.request.mode == 0 or self.navigator.getResult() == 0 else False
         return result
     
 def main(args=None) :

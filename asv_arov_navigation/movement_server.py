@@ -21,7 +21,7 @@ class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
-        self.action_client = ActionClient(self, AROVCommandAction, 'arov_navigator')
+        self.action_client = ActionClient(self, AROVCommandAction, 'AROV_navigation_action')
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.declare_parameter('use_sim', False)
@@ -29,7 +29,7 @@ class NavigationActionServer(Node):
 
         self.asv_nav = BasicNavigator(namespace="asv")
         self.asv_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
-        self.get_logger.info("ASV Nav2 Active")
+        self.get_logger().info("ASV Nav2 Active")
 
         self.isTaskDone = False
 
@@ -76,7 +76,6 @@ class NavigationActionServer(Node):
             self.get_logger().info("Completed ASV's goToPose call")
         else:
             leader_future = self.send_goal(leader_goal_pose, leader_initial_pose, 1)
-
         if follower_initial_pose is not None:
             follower_running = False
             while not self.asv_nav.isTaskComplete():
@@ -88,25 +87,23 @@ class NavigationActionServer(Node):
                 follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose)
                 follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
                 follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
-                if follower_future.request.done() and follower_future.request.result().get_result_async().done():
+                if follower_future.done() and follower_future.result().get_result_async().done():
                     follower_running = False
                 else:
                     follower_running = True
-
             if self.asv_nav.isTaskComplete():
                 follower_goal_pose = self._get_initial_pose('asv')
                 follower_current_pose = self._get_initial_pose('arov')
                 follower_goal_pose.pose.position.z = follower_current_pose.pose.position.z
                 follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
                 follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
-                while not follower_future.request.done() or (follower_future.request.done() and not follower_future.request.result().get_result_async().done()):
+                while not follower_future.done() or (follower_future.done() and not follower_future.result().get_result_async().done()):
                     print('Moving to waypoint')
-                    pass
             follower_success = follower_future.result().goal_reached
 
         else:
             if leader == 'arov':
-                while not leader_future.request.done() or (leader_future.request.done() and not leader_future.request.result().get_result_async().done()):
+                while not leader_future.done() or (leader_future.done() and not leader_future.get_result_async().done()):
                     print('Moving to waypoint')
                     pass
                 leader_success = leader_future.result().goal_reached
@@ -115,30 +112,18 @@ class NavigationActionServer(Node):
                     print('Moving to waypoint')
                     pass
                 leader_success = True if self.asv_nav.getResult().error_code == 0  else False
-
-        if leader_success and follower_success:
-            self.get_logger().info("Navigation task succeeded")
-            return True
-        else:
-            self.get_logger().info("Navigation task failed")
-            return False
+        self.get_logger().info("Done")
+        result = NavigationAction.Result()
+        result.goal_reached = leader_success and follower_success
+        return result
 
     def _get_initial_pose(self, vehicle):
-        initial_pose = PoseStamped()
-        if not self.use_sim :
-            while True :
-                try:
-                    transform = self.tf_buffer.lookup_transform(vehicle + '/base_link', 'map', rclpy.time.Time())
-                    return build_pose_stamped(self.get_clock().now(), "map", [transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z], transform.transform.rotation)
-                except TransformException as initial_pose_ex:
-                    self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
-        else :
-            while True :
-                if (vehicle == 'asv' and self.asv_pose is not None) or (vehicle == 'arov' and self.arov_pose is not None) :
-                    if vehicle == 'asv' :
-                        return build_pose_stamped(self.get_clock().now(), "map", [self.asv_pose[0], self.asv_pose[1], 0, 0, 0, self.asv_pose[2]])
-                    else :
-                        return build_pose_stamped(self.get_clock().now(), "map", [self.arov_pose[0], self.arov_pose[1], 0, 0, 0, self.arov_pose[2]])
+        while True :
+            try:
+                transform = self.tf_buffer.lookup_transform(vehicle + '/base_link', 'map', rclpy.time.Time())
+                return build_pose_stamped(self.get_clock().now(), "map", [transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z], transform.transform.rotation)
+            except TransformException as initial_pose_ex:
+                self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')
 
     def _calculate_pose(self, follower_pose, leader_pose, follower_clearance):
         x_transform = follower_pose.pose.position.x - leader_pose.pose.position.x

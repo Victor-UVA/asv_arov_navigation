@@ -17,6 +17,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Twist
+from asv_arov_interfaces.srv import GetOdom
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -53,6 +54,7 @@ class PosePublisher(LifecycleNode):
 
         self.x = self.y = self.z = self.yaw = 0.0
         self.current_velocity = Twist()
+        self.odom = Odometry()
 
         self.timer = None
         self.last_time = None
@@ -79,8 +81,13 @@ class PosePublisher(LifecycleNode):
         self.get_logger().info('Configuring...')
 
         self.cmd_sub = self.create_subscription(Twist, self.cmd_vel_topic, self.velocity_callback, 10)
-        self.odom_pub = self.create_publisher(Odometry, self.odom_topic, 10)
         self.pose_pub = self.create_publisher(PoseWithCovarianceStamped, self.pose_topic, self.amcl_qos)
+        self.odom_srv = self.create_service(GetOdom, self.get_namespace() + '/get_odom', self.odom_srv_callback)
+        if not self.use_sim :
+            self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odometry_callback, 10)
+
+        else :
+            self.odom_pub = self.create_publisher(Odometry, self.odom_topic, 10)
         
         msg = LifecycleState()
         msg.id = LifecycleState.PRIMARY_STATE_INACTIVE
@@ -128,34 +135,33 @@ class PosePublisher(LifecycleNode):
             tf.child_frame_id = self.get_namespace().strip('/') + '/odom'
             self.tf_broadcaster.sendTransform(tf)
 
-            odom = Odometry()
-            odom.header.stamp = now.to_msg()
-            odom.header.frame_id = self.get_namespace().strip('/') + '/odom'
-            odom.child_frame_id = self.get_namespace().strip('/') + '/base_link'
+            self.odom.header.stamp = now.to_msg()
+            self.odom.header.frame_id = self.get_namespace().strip('/') + '/odom'
+            self.odom.child_frame_id = self.get_namespace().strip('/') + '/base_link'
 
-            odom.pose.pose.position.x = self.x
-            odom.pose.pose.position.y = self.y
-            odom.pose.pose.position.z = self.z
+            self.odom.pose.pose.position.x = self.x
+            self.odom.pose.pose.position.y = self.y
+            self.odom.pose.pose.position.z = self.z
             quat = R.from_euler('z', self.yaw).as_quat()
-            odom.pose.pose.orientation = Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3])
-            odom.twist.twist = self.current_velocity
-            self.odom_pub.publish(odom)
+            self.odom.pose.pose.orientation = Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3])
+            self.odom.twist.twist = self.current_velocity
+            self.odom_pub.publish(self.odom)
 
             tf = TransformStamped()
-            tf.header.stamp = odom.header.stamp
+            tf.header.stamp = self.odom.header.stamp
             tf.header.frame_id = self.get_namespace().strip('/') + '/odom'
             tf.child_frame_id = self.get_namespace().strip('/') + '/base_link'
             tf.transform.translation.x = self.x
             tf.transform.translation.y = self.y
             tf.transform.translation.z = self.z
-            tf.transform.rotation = odom.pose.pose.orientation
+            tf.transform.rotation = self.odom.pose.pose.orientation
             self.tf_broadcaster.sendTransform(tf)
 
             # Simulated amcl_pose
             pose = PoseWithCovarianceStamped()
-            pose.header.stamp = odom.header.stamp
+            pose.header.stamp = self.odom.header.stamp
             pose.header.frame_id = 'map'
-            pose.pose.pose = odom.pose.pose
+            pose.pose.pose = self.odom.pose.pose
             pose.pose.covariance = [
                 0.05, 0, 0, 0, 0, 0,
                 0, 0.05, 0, 0, 0, 0,
@@ -188,6 +194,14 @@ class PosePublisher(LifecycleNode):
                     0, 0, 0, 0, 0, 0.1
                 ]
                 self.pose_pub.publish(pose)
+    
+    def odometry_callback(self, msg: Odometry) :
+        self.odom = msg
+    
+    def odom_srv_callback(self, request: GetOdom.Request, response: GetOdom.Response) :
+        response.odom = self.odom
+        
+        return response
 
 
 def main(args=None):

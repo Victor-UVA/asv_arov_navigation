@@ -17,6 +17,8 @@ from scipy.spatial.transform import Rotation
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
 
+from rclpy.executors import MultiThreadedExecutor
+
 class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
@@ -99,7 +101,7 @@ class NavigationActionServer(Node):
                 follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
                 follower_nav.cancelTask()
                 self.follower_task = follower_nav.goToPose(follower_target_pose)
-                self._loop_rate.sleep()
+                # self._loop_rate.sleep()
                 if not follower_nav.isTaskComplete():
                     follower_running = True
                 else:

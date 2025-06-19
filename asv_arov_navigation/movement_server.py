@@ -31,7 +31,7 @@ class NavigationActionServer(Node):
         self.asv_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
         self.get_logger().info("ASV Nav2 Active")
 
-        self.isTaskDone = False
+        self.follow_distance = 1.0
 
     def send_goal(self, goal, init_pose, mode):
         goal_msg = AROVCommandAction.Goal()
@@ -84,7 +84,7 @@ class NavigationActionServer(Node):
                     follower_current_pose = follower_initial_pose
                 else:
                     follower_current_pose = self._get_initial_pose('arov')
-                follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose)
+                follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose, self.follow_distance)
                 follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
                 follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
                 if follower_future.done() and follower_future.result().get_result_async().done():

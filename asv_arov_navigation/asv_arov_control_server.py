@@ -46,7 +46,7 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [[0, 0, 0], [0, -3, 0]]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
         self.arov_fence_frame_pairs = [("", ""), ("", "")]
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
@@ -106,7 +106,7 @@ class ControlActionServer(Node) :
                         self.get_logger().info("Cleaning start")
                         self.cleaning_check = True
                         self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
-                    elif self.cleaning_future is not None and self.cleaning_future.result().get_result_async().done() :
+                    elif self.cleaning_future is not None and self.cleaning_future.done() and self.cleaning_future.result().get_result_async().done() :
                         self.get_logger().info("Cleaning end")
                         self.cleaning_check = False
                         self.cleaning_action_client.done = False
@@ -118,7 +118,7 @@ class ControlActionServer(Node) :
                         if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                             self.asv_target_pose_id = 0
                         self.nav_future = self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                    elif self.nav_future is not None and self.nav_future.result().get_result_async().done() :
+                    elif self.nav_future is not None and self.nav_future.done() and self.nav_future.result().get_result_async().done() :
                         self.get_logger().info("Nav end")
                         self.navigation_check = False
                         self.asv_target_pose_id += 1

@@ -24,7 +24,12 @@ class AROVNavigationServer(Node) :
         else :
             self.navigator.cancelTask()
         result = AROVCommandAction.Result()
-        result.goal_reached = True if goal_handle.request.mode == 0 or self.navigator.getResult() == 0 else False
+        if goal_handle.request.mode == 0 or self.navigator.getResult() == 0 :
+            result.goal_reached = True
+            goal_handle.succeed()
+        else :
+            result.goal_reached = False
+            goal_handle.abort()
         return result
     
 def main(args=None) :

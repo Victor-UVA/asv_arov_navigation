@@ -5,7 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 
 
-def generate_launch_decription() :
+def generate_launch_description() :
     pkg_path = get_package_share_directory('robot_guidance_pkg')
     depth_control_param_file = os.path.join(pkg_path, 'config', 'depth_control_params.yaml')
     strafe_control_param_file = os.path.join(pkg_path, 'config', 'strafe_control_params.yaml')

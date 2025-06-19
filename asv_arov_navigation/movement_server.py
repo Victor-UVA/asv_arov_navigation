@@ -5,8 +5,8 @@ import math
 import numpy as np
 
 from rclpy.node import Node
-from rclpy.action import ActionServer
-from asv_arov_interfaces.action import NavigationAction
+from rclpy.action import ActionServer, ActionClient
+from asv_arov_interfaces.action import NavigationAction, AROVCommandAction
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -21,125 +21,107 @@ class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
+        self.action_client = ActionClient(self, AROVCommandAction, 'arov_navigator')
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
-
         self.declare_parameter('use_sim', False)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
 
-        if self.use_sim :
-            self.asv_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/asv/amcl_pose', self.asv_pose_callback, 1)
-            self.arov_pose_subscriber = self.create_subscription(PoseWithCovarianceStamped, '/arov/amcl_pose', self.arov_pose_callback, 1)
-
-        self.asv_pose = None
-        self.arov_pose = None
-
-        self.arov_nav = BasicNavigator(node_name="navigation_basic_navigator", namespace="arov")
         self.asv_nav = BasicNavigator(namespace="asv")
-        self.leader_task = None
-        self.follower_task = None
+        self.asv_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
+        self.get_logger.info("ASV Nav2 Active")
 
-        self._loop_rate = self.create_rate(0.2, self.get_clock())
+        self.isTaskDone = False
 
-    def asv_pose_callback(self, data) :
-        self.asv_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
-
-    def arov_pose_callback(self, data) :
-        self.arov_pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion(data.pose.pose.orientation)[2]]
+    def send_goal(self, goal, init_pose, mode):
+        goal_msg = AROVCommandAction.Goal()
+        goal_msg.goal = goal
+        goal_msg.init_pose = init_pose
+        goal_msg.mode = mode
+        self.action_client.wait_for_server()
+        return self.action_client.send_goal_async(goal_msg)
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
-            self.arov_nav.cancelTask()
+            self.send_goal(PoseStamped(), PoseStamped(), 0) # AROV cancel task
             self.asv_nav.cancelTask()
 
-        elif (msg.request.mode == 1) or (msg.request.mode == 2):
-            if msg.request.mode == 1:   # ASV leads, AROV follows
-                leader_nav = self.asv_nav
-                follower_nav = self.arov_nav
-                leader_initial_pose = self._get_initial_pose('asv')
-                follower_initial_pose = self._get_initial_pose('arov')
-            else:   # AROV leads, ASV follows
-                leader_nav = self.arov_nav
-                follower_nav = self.asv_nav
-                leader_initial_pose = self._get_initial_pose('arov')
-                follower_initial_pose = self._get_initial_pose('asv')
-
+        else:
+            asv_current_pose = self._get_initial_pose('asv')
+            arov_current_pose = self._get_initial_pose('arov')
             self.get_logger().info("Defined initial poses")
+            leader_goal_pose = msg.request.goal
+            self.get_logger().info("Defined goal pose")
 
-            leader_current_pose = None
-            follower_current_pose = None
+            if msg.request.mode == 1 or msg.request.mode == 3:
+                leader_goal_pose.pose.position.z = asv_current_pose.pose.position.z
+                if msg.request.mode == 1:   # ASV leads, AROV follows
+                    return self._goto('asv', asv_current_pose, arov_current_pose, leader_goal_pose)
+                else:   # only ASV moves
+                    return self._goto('asv', asv_current_pose, None, leader_goal_pose)
+            else:
+                leader_goal_pose.pose.position.z = arov_current_pose.pose.position.z
+                if msg.request.mode == 2:   # AROV leads, ASV follows
+                    return self._goto('arov', arov_current_pose, asv_current_pose, leader_goal_pose)
+                else:   # only AROV moves
+                    return self._goto('arov', arov_current_pose, None, leader_goal_pose)
+
+    def _goto(self, leader, leader_initial_pose, follower_initial_pose, leader_goal_pose):
+        leader_success = False
+        follower_success = True
+        if leader == 'asv':
+            self.asv_nav.setInitialPose(leader_initial_pose)
+            self.get_logger().info("Set ASV's initial poses")
+            self.asv_nav.goToPose(leader_goal_pose)
+            self.get_logger().info("Completed ASV's goToPose call")
+        else:
+            leader_future = self.send_goal(leader_goal_pose, leader_initial_pose, 1)
+
+        if follower_initial_pose is not None:
             follower_running = False
-            leader_target_pose = build_pose_stamped(self.get_clock().now(), "map", [msg.request.goal[0], msg.request.goal[1], 0, 0, 0, msg.request.goal[2]])
-
-            self.get_logger().info("Defined target pose")
-
-            leader_nav.setInitialPose(leader_initial_pose)
-            follower_nav.setInitialPose(follower_initial_pose)
-
-            self.get_logger().info("Set initial poses")
-            if msg.request.mode == 1 :
-                leader_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
-                follower_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
-            else :
-                leader_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
-                follower_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
-
-            self.get_logger().info("Nav2 active")
-
-            self.leader_task = leader_nav.goToPose(leader_target_pose)
-
-            self.get_logger().info("Completed goToPose call")
-
-            while not leader_nav.isTaskComplete(): # or follower_running:
-                leader_current_pose = leader_nav.getFeedback().current_pose
+            while not self.asv_nav.isTaskComplete():
+                leader_current_pose = self._get_initial_pose('asv')
                 if not follower_running:
                     follower_current_pose = follower_initial_pose
                 else:
-                    follower_current_pose = follower_nav.getFeedback().current_pose
-                follower_target_pose = self._calculate_pose(follower_current_pose, leader_current_pose, 1)
-                follower_nav.cancelTask()
-                self.follower_task = follower_nav.goToPose(follower_target_pose)
-                # self._loop_rate.sleep()
-                if not follower_nav.isTaskComplete():
-                    follower_running = True
-                else:
+                    follower_current_pose = self._get_initial_pose('arov')
+                follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose)
+                follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
+                follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
+                if follower_future.request.done() and follower_future.request.result().get_result_async().done():
                     follower_running = False
+                else:
+                    follower_running = True
 
-        elif(msg.request.mode == 3) or (msg.request.mode == 4):
-            if (msg.request.mode == 3): # only ASV moves
-                leader_nav = self.asv_nav
-                leader_initial_pose = self._get_initial_pose('asv')
-            else:   # only AROV moves
-                leader_nav = self.arov_nav
-                leader_initial_pose = self._get_initial_pose('arov')
+            if self.asv_nav.isTaskComplete():
+                follower_goal_pose = self._get_initial_pose('asv')
+                follower_current_pose = self._get_initial_pose('arov')
+                follower_goal_pose.pose.position.z = follower_current_pose.pose.position.z
+                follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
+                follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
+                while not follower_future.request.done() or (follower_future.request.done() and not follower_future.request.result().get_result_async().done()):
+                    print('Moving to waypoint')
+                    pass
+            follower_success = follower_future.result().goal_reached
 
-            leader_target_pose = build_pose_stamped(self.get_clock().now(), "map", [msg.request.goal[0], msg.request.goal[1], 0, 0, 0, msg.request.goal[2]])
-            self.get_logger().info("Defined target pose")
-            self.get_logger().info(f'{leader_initial_pose}')
-            leader_nav.setInitialPose(leader_initial_pose)
-            self.get_logger().info("Set initial poses")
-
-            if msg.request.mode == 3:
-                leader_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
-            else:
-                leader_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
-            self.get_logger().info("Nav2 active")
-
-            self.leader_task = leader_nav.goToPose(leader_target_pose)
-            self.get_logger().info("Completed goToPose call")
-
-        self.get_logger().info("Finishing navigation task")
-
-        asv_result = self.asv_nav.getResult()
-        # arov_result = self.arov_nav.getResult()
-        result = NavigationAction.Result()
-        if asv_result == TaskResult.SUCCEEDED:
-            result.goal_reached = True
-            return result
         else:
-            result.goal_reached = False
-            return result
+            if leader == 'arov':
+                while not leader_future.request.done() or (leader_future.request.done() and not leader_future.request.result().get_result_async().done()):
+                    print('Moving to waypoint')
+                    pass
+                leader_success = leader_future.result().goal_reached
+            else:
+                while not self.asv_nav.isTaskComplete():
+                    print('Moving to waypoint')
+                    pass
+                leader_success = True if self.asv_nav.getResult().error_code == 0  else False
 
+        if leader_success and follower_success:
+            self.get_logger().info("Navigation task succeeded")
+            return True
+        else:
+            self.get_logger().info("Navigation task failed")
+            return False
 
     def _get_initial_pose(self, vehicle):
         initial_pose = PoseStamped()

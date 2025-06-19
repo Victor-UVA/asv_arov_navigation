@@ -16,7 +16,7 @@ def generate_launch_description():
     arov_namespace = 'arov'
     asv_namespace = 'asv'
 
-    use_sim = LaunchConfiguration('use_sim')
+    use_sim = LaunchConfiguration('use_sim', default=False)
 
     ld = LaunchDescription([
         Node(

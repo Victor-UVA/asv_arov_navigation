@@ -55,8 +55,8 @@ class ControlActionServer(Node) :
         self.cleaning_check = False
         self.navigation_check = False
         
-        self.nav_future = None
-        self.cleaning_future = None
+        self.nav_done = False
+        self.cleaning_done = False
 
         self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
         self.fence_frame_cleaning_routine_directions = []
@@ -75,8 +75,15 @@ class ControlActionServer(Node) :
         goal_msg.mode = vehicle
 
         self.navigation_action_client.wait_for_server()
+        future = self.navigation_action_client.send_goal_async(goal_msg)
+        future.add_done_callback(self.navigation_goal_response_callback)
+    
+    def navigation_goal_response_callback(self, future) :
+        result_future = future.result().get_result_async()
+        result_future.add_done_callback(self.navigation_result_callback)
 
-        return self.navigation_action_client.send_goal_async(goal_msg)
+    def navigation_result_callback(self, future) :
+        self.nav_done = True
     
     def send_cleaning_goal(self, pose_list, commands) :
         goal_msg = NavigateAprilTags.Goal()
@@ -106,7 +113,7 @@ class ControlActionServer(Node) :
                         self.get_logger().info("Cleaning start")
                         self.cleaning_check = True
                         self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
-                    elif self.cleaning_future is not None and self.cleaning_future.done() and self.cleaning_future.result().get_result_async().done() :
+                    elif self.cleaning_done :
                         self.get_logger().info("Cleaning end")
                         self.cleaning_check = False
                         self.cleaning_action_client.done = False
@@ -117,8 +124,8 @@ class ControlActionServer(Node) :
                         self.navigation_check = True
                         if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                             self.asv_target_pose_id = 0
-                        self.nav_future = self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                    elif self.nav_future is not None and self.nav_future.done() and self.nav_future.result().get_result_async().done() :
+                        self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+                    elif self.nav_done :
                         self.get_logger().info("Nav end")
                         self.navigation_check = False
                         self.asv_target_pose_id += 1

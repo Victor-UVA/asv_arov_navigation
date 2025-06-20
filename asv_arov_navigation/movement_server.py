@@ -35,8 +35,6 @@ class NavigationActionServer(Node):
         self.get_logger().info("AROV Nav2 Active")
 
         self.follow_distance = 1.0
-        self._sleep_rate = self.create_rate(2.0, self.get_clock())
-        # self._loop_rate = self.create_rate(1.0, self.get_clock())
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
@@ -88,21 +86,18 @@ class NavigationActionServer(Node):
                 follower = 'asv'
                 follow_nav = self.asv_nav
                 self.get_logger().info("ASV set as follower")
-
-            self._sleep_rate.sleep()  # let leader move away
+                
             while not lead_nav.isTaskComplete():
                 leader_current_pose = self._get_initial_pose(leader)
                 follower_current_pose = self._get_initial_pose(follower)
                 follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose, self.follow_distance)
 
-                # self._sleep_rate.sleep()    # let leader move away on first loop, let follower move on subsequent loops
-
                 follow_nav.setInitialPose(follower_current_pose)
-                self.get_logger().info(f"Got {follower}'s initial pose")
+                # self.get_logger().info(f"Got {follower}'s initial pose")
                 follow_nav.cancelTask()
-                self.get_logger().info(f"Canceled {follower}'s current goto")
+                # self.get_logger().info(f"Canceled {follower}'s current goto")
                 follow_nav.goToPose(follower_goal_pose)
-                self.get_logger().info(f"Completed {follower}'s goToPose call")
+                # self.get_logger().info(f"Completed {follower}'s goToPose call")
 
             if lead_nav.isTaskComplete():
                 leader_success = True if lead_nav.getResult() == 0 else False
@@ -113,11 +108,11 @@ class NavigationActionServer(Node):
                 follower_goal_pose.pose.position.z = follower_current_pose.pose.position.z
 
                 follow_nav.setInitialPose(follower_current_pose)
-                #self.get_logger().info(f"Got {follower}'s initial pose")
+                # self.get_logger().info(f"Got {follower}'s initial pose")
                 follow_nav.cancelTask()
-                #self.get_logger().info(f"Canceled {follower}'s current goto")
+                # self.get_logger().info(f"Canceled {follower}'s current goto")
                 follow_nav.goToPose(follower_goal_pose)
-                #self.get_logger().info(f"Completed {follower}'s goToPose call")
+                # self.get_logger().info(f"Completed {follower}'s goToPose call")
 
                 while not follow_nav.isTaskComplete():
                     pass

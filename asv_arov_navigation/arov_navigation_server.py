@@ -14,7 +14,6 @@ class AROVNavigationServer(Node) :
 
     def execute_callback_async(self, goal_handle) :
         self.get_logger().info("Received goal")
-        goal_handle.notify_goal_done()
         if goal_handle.request.mode == 1 :
             self.navigator.setInitialPose(goal_handle.request.init_pose)
             self.navigator.goToPose(goal_handle.request.goal)

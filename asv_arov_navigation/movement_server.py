@@ -6,7 +6,7 @@ import numpy as np
 
 from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient
-from asv_arov_interfaces.action import NavigationAction, AROVCommandAction
+from asv_arov_interfaces.action import NavigationAction
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -21,7 +21,6 @@ class NavigationActionServer(Node):
     def __init__(self):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
-        self.action_client = ActionClient(self, AROVCommandAction, 'AROV_navigation_action')
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.declare_parameter('use_sim', False)

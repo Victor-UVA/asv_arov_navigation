@@ -46,7 +46,7 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
         self.arov_fence_frame_pairs = [("", ""), ("", "")]
         self.asv_target_pose_id = 0
         self.asv_home_pose = None

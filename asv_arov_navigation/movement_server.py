@@ -113,11 +113,11 @@ class NavigationActionServer(Node):
                 follower_goal_pose.pose.position.z = follower_current_pose.pose.position.z
 
                 follow_nav.setInitialPose(follower_current_pose)
-                self.get_logger().info(f"Got {follower}'s initial pose")
+                #self.get_logger().info(f"Got {follower}'s initial pose")
                 follow_nav.cancelTask()
-                self.get_logger().info(f"Canceled {follower}'s current goto")
+                #self.get_logger().info(f"Canceled {follower}'s current goto")
                 follow_nav.goToPose(follower_goal_pose)
-                self.get_logger().info(f"Completed {follower}'s goToPose call")
+                #self.get_logger().info(f"Completed {follower}'s goToPose call")
 
                 while not follow_nav.isTaskComplete():
                     pass
@@ -127,7 +127,7 @@ class NavigationActionServer(Node):
         else:
             while not lead_nav.isTaskComplete():
                 pass
-            leader_success = True if lead_nav.getResult().error_code == 0 else False
+            leader_success = True if lead_nav.getResult() == 0 else False
             self.get_logger().info(f"Leader finished moving - success: {leader_success}")
 
         self.get_logger().info(f"Done with navigation action(s) - success: {leader_success and follower_success}")

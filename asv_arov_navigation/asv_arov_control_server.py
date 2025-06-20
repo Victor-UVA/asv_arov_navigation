@@ -46,7 +46,7 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
         self.arov_fence_frame_pairs = [("", ""), ("", "")]
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
@@ -90,12 +90,18 @@ class ControlActionServer(Node) :
             self.create_timer(1, self.run_state_machine)
         return ControlModeAction.Result()
     
+    def setup_routine_in_frame(self, frame_id) :
+        out = []
+        for i in self.fence_frame_cleaning_routine_poses :
+            out.append(build_pose_stamped(self.get_clock().now(), frame_id, [i.pose.position.x, i.pose.position.y, i.pose.position.z], i.pose.orientation))
+        return out
+    
     def run_state_machine(self) :
         if self.state == ControlState.STARTING :
             if self.asv_home_pose is None :
                 t = None
                 try :
-                    t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
+                    t = self.tf_buffer.lookup_transform('map', 'asv/base_link', rclpy.time.Time())
                 except TransformException as ex :
                     self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                 if t is not None :

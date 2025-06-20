@@ -32,14 +32,28 @@ class NavigationActionServer(Node):
         self.get_logger().info("ASV Nav2 Active")
 
         self.follow_distance = 1.0
+        self.arov_done = False
+        self.arov_success = False
 
     def send_goal(self, goal, init_pose, mode):
+        self.arov_done = False
+        self.arov_success = False
         goal_msg = AROVCommandAction.Goal()
         goal_msg.goal = goal
         goal_msg.init_pose = init_pose
         goal_msg.mode = mode
         self.action_client.wait_for_server()
-        return self.action_client.send_goal_async(goal_msg)
+        future = self.action_client.send_goal_async(goal_msg)
+        future.add_done_callback(self.goal_response_callback)
+
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        future = goal_handle.get_result_async()
+        future.add_done_callback(self.goal_request_callback)
+
+    def goal_request_callback(self, future):
+        self.arov_done = True
+        self.arov_success = future.result().result.goal_reached
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
@@ -75,7 +89,9 @@ class NavigationActionServer(Node):
             self.asv_nav.goToPose(leader_goal_pose)
             self.get_logger().info("Completed ASV's goToPose call")
         else:
-            leader_future = self.send_goal(leader_goal_pose, leader_initial_pose, 1)
+            self.get_logger().info("send goal - arov leader")
+            self.send_goal(leader_goal_pose, leader_initial_pose, 1)
+
         if follower_initial_pose is not None:
             follower_running = False
             while not self.asv_nav.isTaskComplete():
@@ -85,9 +101,11 @@ class NavigationActionServer(Node):
                 else:
                     follower_current_pose = self._get_initial_pose('arov')
                 follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose, self.follow_distance)
-                follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
-                follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
-                if follower_future.done() and follower_future.result().get_result_async().done():
+                self.get_logger().info("cancel goal - while loop")
+                self.send_goal(PoseStamped(), PoseStamped(), 0)
+                self.get_logger().info("send goal - while loop")
+                self.send_goal(follower_goal_pose, follower_current_pose, 1)
+                if not self.arov_done:
                     follower_running = False
                 else:
                     follower_running = True
@@ -95,23 +113,26 @@ class NavigationActionServer(Node):
                 follower_goal_pose = self._get_initial_pose('asv')
                 follower_current_pose = self._get_initial_pose('arov')
                 follower_goal_pose.pose.position.z = follower_current_pose.pose.position.z
-                follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
-                follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
-                while not follower_future.done() or (follower_future.done() and not follower_future.result().get_result_async().done()):
-                    print('Moving to waypoint')
-            follower_success = follower_future.result().goal_reached
+                self.get_logger().info("cancel goal - if statement")
+                self.send_goal(PoseStamped(), PoseStamped(), 0)
+                self.get_logger().info("send goal - if statement")
+                self.send_goal(follower_goal_pose, follower_current_pose, 1)
+                while not self.arov_done:
+                    print('Moving to waypoint') # in future move logger outside of while to not flood terminal
+                follower_success = self.arov_success
+                self.get_logger().info(f"Follower finished moving - success: {follower_success}")
 
         else:
             if leader == 'arov':
-                while not leader_future.done() or (leader_future.done() and not leader_future.get_result_async().done()):
+                while not self.arov_done:
                     print('Moving to waypoint')
-                    pass
-                leader_success = leader_future.result().goal_reached
+                leader_success = self.arov_success
             else:
                 while not self.asv_nav.isTaskComplete():
                     print('Moving to waypoint')
-                    pass
                 leader_success = True if self.asv_nav.getResult().error_code == 0  else False
+            self.get_logger().info(f"Leader finished moving - success: {leader_success}")
+
         self.get_logger().info("Done")
         result = NavigationAction.Result()
         result.goal_reached = leader_success and follower_success

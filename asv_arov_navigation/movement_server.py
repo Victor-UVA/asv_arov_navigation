@@ -95,9 +95,9 @@ class NavigationActionServer(Node):
                 follower_goal_pose = self._get_initial_pose('asv')
                 follower_current_pose = self._get_initial_pose('arov')
                 follower_goal_pose.pose.position.z = follower_current_pose.pose.position.z
-                follower_future = self.send_goal(PoseStamped(), PoseStamped(), 0)
+                self.send_goal(PoseStamped(), PoseStamped(), 0)
                 follower_future = self.send_goal(follower_goal_pose, follower_current_pose, 1)
-                while not follower_future.done() or (follower_future.done() and not follower_future.result().get_result_async().done()):
+                while not follower_future.result(): #follower_future.done() or (follower_future.done() and not follower_future.result().get_result_async().done()):
                     self.get_logger().info('Moving to waypoint')
             follower_success = follower_future.result().goal_reached
 

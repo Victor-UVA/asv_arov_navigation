@@ -90,6 +90,12 @@ class ControlActionServer(Node) :
             self.create_timer(1, self.run_state_machine)
         return ControlModeAction.Result()
     
+    def setup_routine_in_frame(self, frame_id) :
+        out = []
+        for i in self.fence_frame_cleaning_routine_poses :
+            out.append(build_pose_stamped(self.get_clock().now(), frame_id, [i.pose.position.x, i.pose.position.y, i.pose.position.z], i.pose.orientation))
+        return out
+    
     def run_state_machine(self) :
         if self.state == ControlState.STARTING :
             if self.asv_home_pose is None :

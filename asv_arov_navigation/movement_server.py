@@ -34,6 +34,7 @@ class NavigationActionServer(Node):
         self.follow_distance = 1.0
         self.arov_done = False
         self.arov_success = False
+        self._sleep_rate = self.create_rate(2.0, self.get_clock())
 
     def send_goal(self, goal, init_pose, mode):
         self.arov_done = False
@@ -47,13 +48,16 @@ class NavigationActionServer(Node):
         future.add_done_callback(self.goal_response_callback)
 
     def goal_response_callback(self, future):
+        self.get_logger().info("Goal response")
         goal_handle = future.result()
         future = goal_handle.get_result_async()
         future.add_done_callback(self.goal_request_callback)
 
     def goal_request_callback(self, future):
+        self.get_logger().info("Goal done")
         self.arov_done = True
         self.arov_success = future.result().result.goal_reached
+        self.get_logger().info(f"Request callback - done: {self.arov_done} / success: {self.arov_success}")
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
@@ -94,6 +98,7 @@ class NavigationActionServer(Node):
 
         if follower_initial_pose is not None:
             follower_running = False
+            self._sleep_rate.sleep()
             while not self.asv_nav.isTaskComplete():
                 leader_current_pose = self._get_initial_pose('asv')
                 if not follower_running:
@@ -117,19 +122,22 @@ class NavigationActionServer(Node):
                 self.send_goal(PoseStamped(), PoseStamped(), 0)
                 self.get_logger().info("send goal - if statement")
                 self.send_goal(follower_goal_pose, follower_current_pose, 1)
-                while not self.arov_done:
-                    print('Moving to waypoint') # in future move logger outside of while to not flood terminal
+                self.get_logger().info("Moving to waypoint - if statement")
+                # while not self.arov_done:
+                pass
                 follower_success = self.arov_success
                 self.get_logger().info(f"Follower finished moving - success: {follower_success}")
 
         else:
             if leader == 'arov':
+                self.get_logger().info('Moving to waypoint')
                 while not self.arov_done:
-                    print('Moving to waypoint')
+                    pass
                 leader_success = self.arov_success
             else:
+                self.get_logger().info('Moving to waypoint')
                 while not self.asv_nav.isTaskComplete():
-                    print('Moving to waypoint')
+                    pass
                 leader_success = True if self.asv_nav.getResult().error_code == 0  else False
             self.get_logger().info(f"Leader finished moving - success: {leader_success}")
 
@@ -152,7 +160,7 @@ class NavigationActionServer(Node):
         xy_transform = np.array([x_transform, y_transform], dtype=np.float64)
         magnitude = np.linalg.norm(xy_transform)
         xy_transform_normalized = np.zeros(2, dtype=np.float64)
-        if magnitude != 0 :
+        if magnitude != 0:
             xy_transform_normalized = xy_transform / np.linalg.norm(xy_transform)
         follow_orientation = Rotation.from_quat([follower_pose.pose.orientation.x, follower_pose.pose.orientation.y, follower_pose.pose.orientation.z, follower_pose.pose.orientation.w]).as_euler("xyz", degrees=False)
         target_yaw = math.atan2(-y_transform, -x_transform)

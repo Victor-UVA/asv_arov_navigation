@@ -84,54 +84,46 @@ class ControlActionServer(Node) :
 
     def navigation_result_callback(self, future) :
         self.nav_done = True
-    
-    def send_cleaning_goal(self, pose_list, commands) :
-        goal_msg = NavigateAprilTags.Goal()
-        goal_msg.goals = pose_list
-        goal_msg.commands = commands
-
-        self.cleaning_action_client.wait_for_server()
-
-        return self.cleaning_action_client.send_goal_async(goal_msg)
         
     def execute_callback_async(self, goal_handle) :
         if goal_handle.request.mode == 1 :
-            while True :
-                if self.state == ControlState.STARTING :
-                    if self.asv_home_pose is None :
-                        t = None
-                        try :
-                            t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
-                        except TransformException as ex :
-                            self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
-                        if t is not None :
-                            self.asv_home_pose = [t.transform.translation.x, t.transform.translation.y, euler_from_quaternion(t.transform.rotation)[2]]
-                    else :
-                        self.state = ControlState.NAVIGATING
-                elif self.state == ControlState.CLEANING :
-                    if not self.cleaning_check :
-                        self.get_logger().info("Cleaning start")
-                        self.cleaning_check = True
-                        self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
-                    elif self.cleaning_done :
-                        self.get_logger().info("Cleaning end")
-                        self.cleaning_check = False
-                        self.cleaning_action_client.done = False
-                        self.state = ControlState.NAVIGATING
-                elif self.state == ControlState.NAVIGATING :
-                    if not self.navigation_check :
-                        self.get_logger().info("Nav start")
-                        self.navigation_check = True
-                        if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
-                            self.asv_target_pose_id = 0
-                        self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-                    elif self.nav_done :
-                        self.get_logger().info("Nav end")
-                        self.navigation_check = False
-                        self.asv_target_pose_id += 1
-                        self.state = ControlState.CLEANING
-        elif goal_handle.mode == 0 :
-            return ControlModeAction.Result()
+            self.create_timer(1, self.run_state_machine)
+        return ControlModeAction.Result()
+    
+    def run_state_machine(self) :
+        if self.state == ControlState.STARTING :
+            if self.asv_home_pose is None :
+                t = None
+                try :
+                    t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
+                except TransformException as ex :
+                    self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
+                if t is not None :
+                    self.asv_home_pose = [t.transform.translation.x, t.transform.translation.y, euler_from_quaternion(t.transform.rotation)[2]]
+            else :
+                self.state = ControlState.NAVIGATING
+        elif self.state == ControlState.CLEANING :
+            # if not self.cleaning_check :
+            #     self.get_logger().info("Cleaning start")
+            #     self.cleaning_check = True
+            #     self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
+            # elif self.cleaning_done :
+            #     self.get_logger().info("Cleaning end")
+            #     self.cleaning_check = False
+            #     self.cleaning_action_client.done = False
+                self.state = ControlState.NAVIGATING
+        elif self.state == ControlState.NAVIGATING :
+            if not self.navigation_check :
+                self.get_logger().info("Nav start")
+                self.navigation_check = True
+                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
+                    self.asv_target_pose_id = 0
+                self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+            elif self.nav_done :
+                self.get_logger().info("Nav end")
+                self.navigation_check = False
+                self.asv_target_pose_id += 1
+                self.state = ControlState.CLEANING
 
 def main(args=None) :
     rclpy.init()

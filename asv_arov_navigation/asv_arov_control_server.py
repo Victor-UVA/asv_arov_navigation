@@ -101,7 +101,7 @@ class ControlActionServer(Node) :
             if self.asv_home_pose is None :
                 t = None
                 try :
-                    t = self.tf_buffer.lookup_transform('asv/base_link', 'map', rclpy.time.Time())
+                    t = self.tf_buffer.lookup_transform('map', 'asv/base_link', rclpy.time.Time())
                 except TransformException as ex :
                     self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                 if t is not None :

@@ -105,7 +105,7 @@ class NavigationActionServer(Node):
                 self.get_logger().info(f"Completed {follower}'s goToPose call")
 
             if lead_nav.isTaskComplete():
-                leader_success = True if lead_nav.getResult().error_code == 0 else False
+                leader_success = True if lead_nav.getResult() == 0 else False
                 self.get_logger().info(f"Leader finished moving - success: {leader_success}")
 
                 follower_goal_pose = self._get_initial_pose(leader)
@@ -121,7 +121,7 @@ class NavigationActionServer(Node):
 
                 while not follow_nav.isTaskComplete():
                     pass
-                follower_success = True if self.asv_nav.getResult.error_code == 0 else False
+                follower_success = True if self.asv_nav.getResult() == 0 else False
                 self.get_logger().info(f"Follower finished moving - success: {follower_success}")
 
         else:
@@ -138,7 +138,7 @@ class NavigationActionServer(Node):
     def _get_initial_pose(self, vehicle):
         while True :
             try:
-                transform = self.tf_buffer.lookup_transform(vehicle + '/base_link', 'map', rclpy.time.Time())
+                transform = self.tf_buffer.lookup_transform('map', vehicle + '/base_link', rclpy.time.Time())
                 return build_pose_stamped(self.get_clock().now(), "map", [transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z], transform.transform.rotation)
             except TransformException as initial_pose_ex:
                 self.get_logger().warning(f'Could not get {vehicle} initial pose: {initial_pose_ex}')

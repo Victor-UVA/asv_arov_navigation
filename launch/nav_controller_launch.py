@@ -30,10 +30,6 @@ def generate_launch_description():
             parameters=[{'use_sim': use_sim}]
         ),
         Node(
-            package='asv_arov_navigation',
-            executable='arov_navigation_server'
-        ),
-        Node(
             namespace=arov_namespace,
             package='asv_arov_navigation',
             executable='lifecycle_pose_publisher',

@@ -9,7 +9,7 @@ import os
 
 def main() -> None:
     rclpy.init()
-    nav = BasicNavigator()
+    nav = BasicNavigator(namespace='arov')
 
     # costmap = os.path.join(get_package_share_directory('asv_arov_navigation'), 'config', 'arov_costmap_params.yaml')
     # nav.changeMap(costmap)
@@ -27,27 +27,27 @@ def main() -> None:
 
 
     nav.setInitialPose(initial_pose)
-    nav.waitUntilNav2Active()
-    driveon_task = nav.driveOnHeading(dist=1.0, speed=0.025, time_allowance=10, disable_collision_checks=True)
+    nav.waitUntilNav2Active(localizer='/arov/pose_publisher')
+    driveon_task = nav.driveOnHeading(dist=1.0, speed=0.1, time_allowance=10) #, disable_collision_checks=True)
 
     i = 0
-    while not nav.isTaskComplete(task = driveon_task):
+    while not nav.isTaskComplete():
         i += 1
         if i % 10 == 0:
             print('Moving to waypoint')
 
     result = nav.getResult()
-    if result == TaskResult.SUCCEEDED:
-        print('Waypoint reached')
-    elif result == TaskResult.CANCELED:
-        print('Movement cancelled')
-    elif result == TaskResult.FAILED:
-        (error_code, error_msg) = nav.getTaskError()
-        print('Movement failed!{error_code}:{error_msg}')
-    else:
-        print('Movement has an invalid return status!')
+    #if result == TaskResult.SUCCEEDED:
+    #    print('Waypoint reached')
+    #elif result == TaskResult.CANCELED:
+    #    print('Movement cancelled')
+    #elif result == TaskResult.FAILED:
+    #    (error_code, error_msg) = nav.getTaskError()
+    #    print('Movement failed!{error_code}:{error_msg}')
+    #else:
+    #    print('Movement has an invalid return status!')
 
-    nav.lifecycleShutdown()
+    #nav.lifecycleShutdown()
 
 if __name__ == '__main__':
     main()

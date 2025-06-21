@@ -7,7 +7,7 @@ from rclpy.action import ActionClient
 
 from asv_arov_interfaces.action import ControlModeAction
 from asv_arov_interfaces.action import NavigationAction
-from robot_guidance_interfaces.action import NavigateAprilTags
+#from robot_guidance_interfaces.action import NavigateAprilTags
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -24,7 +24,7 @@ class ControlActionServer(Node) :
 
     def __init__(self) :
         super().__init__('control_action_server')
-        self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
+        #self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
         self.navigation_action_client = ActionClient(self, NavigationAction, 'navigation_action')
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
@@ -46,7 +46,7 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [1, 0, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [-1, 0, 0, 0, 0, 0])]
         self.arov_fence_frame_pairs = [("", ""), ("", "")]
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
@@ -124,7 +124,7 @@ class ControlActionServer(Node) :
                 self.navigation_check = True
                 if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                     self.asv_target_pose_id = 0
-                self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+                self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 4)
             elif self.nav_done :
                 self.get_logger().info("Nav end")
                 self.navigation_check = False

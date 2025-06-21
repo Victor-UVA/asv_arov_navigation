@@ -39,7 +39,7 @@ arov/bt_navigator:
 #--- prediction_horizon_s * max_speed / path_resolution / 3.0 = path_offset ---#
 arov/controller_server:
   ros__parameters:
-    controller_frequency: 20.0
+    controller_frequency: 10.0
     publish_zero_velocity: True
     costmap_update_timeout: 0.6 # after 3 failed updates timeout
     min_x_velocity_threshold: 0.1

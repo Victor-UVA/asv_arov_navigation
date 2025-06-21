@@ -18,7 +18,7 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
 
 class NavigationActionServer(Node):
-    def __init__(self):
+    def __init__(self, arov_navigator):
         super().__init__('navigation_action_server')
         self.action_server = ActionServer(self, NavigationAction, 'navigation_action', self.navigation_callback)
         self.tf_buffer = Buffer()
@@ -28,10 +28,7 @@ class NavigationActionServer(Node):
 
         self.asv_nav = BasicNavigator(namespace="asv")
         self.asv_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
-        self.get_logger().info("ASV Nav2 Active")
-        self.arov_nav = BasicNavigator(namespace="arov")
-        self.arov_nav.waitUntilNav2Active(localizer="/arov/pose_publisher")
-        self.get_logger().info("AROV Nav2 Active")
+        self.arov_nav = arov_navigator
 
         self.follow_distance = 1.0
 

@@ -46,8 +46,9 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 0, 0, 0, 0, 0])]
-        self.arov_fence_frame_pairs = [("", ""), ("", "")]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 3, 0, 0, 0, 0])]
+        self.arov_fence_frame_pairs = [["fence_1", "fence_2"], ["fence_3", "fence_4"]]
+        self.arov_fence_switch = 0
         self.asv_target_pose_id = 0
         self.asv_home_pose = None
 
@@ -85,6 +86,23 @@ class ControlActionServer(Node) :
 
     def navigation_result_callback(self, future) :
         self.nav_done = True
+
+    def send_cleaning_goal(self, pose_list, commands) :
+        goal_msg = NavigateAprilTags.Goal()
+        goal_msg.goals = pose_list
+        goal_msg.commands = commands
+        self.cleaning_done = False
+
+        self.cleaning_action_client.wait_for_server()
+        future = self.cleaning_action_client.send_goal_async(goal_msg)
+        future.add_done_callback(self.cleaning_goal_response_callback)
+
+    def cleaning_goal_response_callback(self, future) :
+        result_future = future.result().get_result_async()
+        result_future.add_done_callback(self.cleaning_result_callback)
+
+    def cleaning_result_callback(self, future) :
+        self.cleaning_done = True
         
     def execute_callback_async(self, goal_handle) :
         if goal_handle.request.mode == 1 :
@@ -110,26 +128,29 @@ class ControlActionServer(Node) :
             else :
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.CLEANING :
-            #if not self.cleaning_check :
-            #    self.get_logger().info("Cleaning start")
-            #    self.cleaning_check = True
-            #    self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
-            #elif self.cleaning_done :
-            #    self.get_logger().info("Cleaning end")
-            #    self.cleaning_check = False
-            #    self.cleaning_action_client.done = False
-                self.state = ControlState.NAVIGATING
+            if not self.cleaning_check :
+                self.get_logger().info("Cleaning start")
+                self.cleaning_check = True
+                self.send_cleaning_goal(self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch], self.fence_frame_cleaning_routine_directions)
+                self.arov_fence_switch = 1
+            elif self.cleaning_done :
+                self.get_logger().info("Cleaning end")
+                self.cleaning_check = False
+                self.cleaning_action_client.done = False
+                if self.arov_fence_switch == 1 :
+                    self.arov_fence_switch = 0
+                    self.state = ControlState.NAVIGATING
         elif self.state == ControlState.NAVIGATING :
             if not self.navigation_check :
                 self.get_logger().info("Nav start")
                 self.navigation_check = True
-                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
-                    self.asv_target_pose_id = 0
                 self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
             elif self.nav_done :
                 self.get_logger().info("Nav end")
                 self.navigation_check = False
                 self.asv_target_pose_id += 1
+                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
+                    self.asv_target_pose_id = 0
                 self.state = ControlState.CLEANING
 
 def main(args=None) :

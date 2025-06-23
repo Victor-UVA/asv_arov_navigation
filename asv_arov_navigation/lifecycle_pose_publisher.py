@@ -11,13 +11,13 @@ from builtin_interfaces.msg import Time
 import rclpy.time
 from tf2_ros import TransformBroadcaster
 from lifecycle_msgs.msg import State as LifecycleState
-from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Twist
 from asv_arov_interfaces.srv import GetOdom
+from asv_arov_navigation.utils import build_transform_stamped
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -58,6 +58,14 @@ class PosePublisher(LifecycleNode):
 
         self.timer = None
         self.last_time = None
+
+        self.x1 = 0
+        self.y1 = -3
+        self.theta1 = 5 * math.pi / 4
+        self.x2 = 0
+        self.y2 = 3
+        self.theta2 = math.pi / 4
+        self.w = 1.8288
 
     def cmd_vel_callback(self, data):
         now = self.get_clock().now()
@@ -157,6 +165,12 @@ class PosePublisher(LifecycleNode):
             tf.transform.rotation = self.odom.pose.pose.orientation
             self.tf_broadcaster.sendTransform(tf)
 
+            if self.get_namespace().strip('/') == "arov" :
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", [self.x1 + self.w * math.cos(self.theta1), self.y1 + self.w * math.sin(self.theta1), 0, 0, 0, self.theta1]))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", [self.x1, self.y1, 0, 0, 0, math.pi - self.theta1]))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", [self.x2 + self.w * math.cos(self.theta2), self.y2 + self.w * math.sin(self.theta2), 0, 0, 0, self.theta2]))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", [self.x2, self.y2, 0, 0, 0, math.pi - self.theta2]))
+
             # Simulated amcl_pose
             pose = PoseWithCovarianceStamped()
             pose.header.stamp = self.odom.header.stamp
@@ -207,10 +221,8 @@ class PosePublisher(LifecycleNode):
 def main(args=None):
     rclpy.init(args=args)
     node = PosePublisher()
-    executor = SingleThreadedExecutor()
-    executor.add_node(node)
     try:
-        executor.spin()
+        rclpy.spin(node)
     finally:
         node.destroy_node()
         rclpy.shutdown()

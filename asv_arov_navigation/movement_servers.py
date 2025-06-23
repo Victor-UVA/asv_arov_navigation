@@ -379,7 +379,7 @@ class MovementServerManager(Node) :
 
     def __init__(self) :
         super().__init__('movement_server_manager')
-        arov_navigator = BasicNavigator("arov")
+        arov_navigator = BasicNavigator(namespace="arov")
         arov_navigator.waitUntilNav2Active(localizer="/arov/pose_publisher")
         self.between_fence_init(arov_navigator)
         self.fence_clean_init(arov_navigator)

@@ -23,6 +23,10 @@ def generate_launch_description():
     ld = LaunchDescription([
         Node(
             package='asv_arov_navigation',
+            executable='depth_control_server_test'
+        ),
+        Node(
+            package='asv_arov_navigation',
             executable='asv_arov_control_server',
             parameters=[control_server_params, {'use_sim': use_sim}]
         ),

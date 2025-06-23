@@ -10,6 +10,8 @@ from asv_arov_interfaces.action import ControlModeAction
 from asv_arov_interfaces.action import NavigationAction
 from robot_guidance_interfaces.action import NavigateAprilTags
 
+from geometry_msgs.msg import PoseStamped
+
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -69,7 +71,7 @@ class ControlActionServer(Node) :
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
-            self.fence_frame_cleaning_routine_directions.append("right")
+            self.fence_frame_cleaning_routine_directions.append("horizontal")
 
     def send_navigation_goal(self, goal, vehicle) :
         goal_msg = NavigationAction.Goal()
@@ -139,8 +141,7 @@ class ControlActionServer(Node) :
             if not self.cleaning_check :
                 self.get_logger().info("Cleaning start")
                 self.cleaning_check = True
-                self.send_cleaning_goal(self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch], self.fence_frame_cleaning_routine_directions)
-                self.arov_fence_switch = 1
+                self.send_cleaning_goal(self.setup_routine_in_frame(self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch]), self.fence_frame_cleaning_routine_directions)
             elif self.cleaning_done :
                 self.get_logger().info("Cleaning end")
                 self.cleaning_check = False
@@ -148,6 +149,8 @@ class ControlActionServer(Node) :
                 if self.arov_fence_switch == 1 :
                     self.arov_fence_switch = 0
                     self.state = ControlState.NAVIGATING
+                else :
+                    self.arov_fence_switch = 1
         elif self.state == ControlState.NAVIGATING :
             if not self.navigation_check :
                 self.get_logger().info("Nav start")

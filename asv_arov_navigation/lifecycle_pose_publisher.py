@@ -168,8 +168,8 @@ class PosePublisher(LifecycleNode):
             if self.get_namespace().strip('/') == "arov" :
                 self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", [self.x1 + self.w * math.cos(self.theta1), self.y1 + self.w * math.sin(self.theta1), 0, 0, 0, self.theta1]))
                 self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", [self.x1, self.y1, 0, 0, 0, math.pi - self.theta1]))
-                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", [self.x2 + self.w * math.cos(self.theta2), self.y2 + self.w * math.sin(self.theta2), 0, 0, 0, self.theta2]))
-                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", [self.x2, self.y2, 0, 0, 0, math.pi - self.theta2]))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_3", [self.x2 + self.w * math.cos(self.theta2), self.y2 + self.w * math.sin(self.theta2), 0, 0, 0, self.theta2]))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_4", [self.x2, self.y2, 0, 0, 0, math.pi - self.theta2]))
 
             # Simulated amcl_pose
             pose = PoseWithCovarianceStamped()

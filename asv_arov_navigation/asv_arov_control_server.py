@@ -117,12 +117,14 @@ class ControlActionServer(Node) :
         t = None
         while True :
             try :
-                t = self.tf_buffer.lookup_transform('map', frame_id, rclpy.time.Time())
+                t = self.tf_buffer.lookup_transform(frame_id, 'map', rclpy.time.Time())
                 break
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AprilTag transform: {ex}')
         for i in self.fence_frame_cleaning_routine_poses :
+            self.get_logger().info(f'Pose in AprilTag frame: {i.pose.position} \n Translation from {frame_id}: {t.transform.translation}')
             out.append(transform_pose_stamped(i, t))
+            self.get_logger().info(f'Pose in map frame: {out[-1].pose.position}')
         return out
     
     def run_state_machine(self) :

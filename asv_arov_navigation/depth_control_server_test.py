@@ -33,7 +33,7 @@ class DepthControlServer(Node) :
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.goal_z = None
-
+    
     def goal_callback(self, msg) :
         start_time = self.get_clock().now()
         self.goal_z = msg.request.target_depth

@@ -32,6 +32,22 @@ def build_transform_stamped(time, parent_frame_id, child_frame_id, transform) :
     transform_stamped.transform.rotation = quaternion_from_euler(transform[3:6])
     return transform_stamped
 
+def transform_pose_stamped(pose_stamped, transform_stamped) :
+    xl = np.array([[pose_stamped.pose.position.x], [pose_stamped.pose.position.y]], dtype=np.float64)
+    R = Rotation.from_quat([transform_stamped.transform.rotation.x, transform_stamped.transform.rotation.y, transform_stamped.transform.rotation.z, transform_stamped.transform.rotation.w])
+    xa = R.apply(xl)
+    out = PoseStamped()
+    out.pose.position.x = xa[0,0] + transform_stamped.transform.translation.x
+    out.pose.position.y = xa[1,0] + transform_stamped.transform.translation.y
+    out.pose.position.z = pose_stamped.pose.position.z + transform_stamped.transform.translation.z
+    Q = Rotation.from_quat([pose_stamped.pose.orientation.x, pose_stamped.pose.orientation.y, pose_stamped.pose.orientation.z, pose_stamped.pose.orientation.w])
+    quat = R * Q
+    out.pose.orientation.x = quat[0]
+    out.pose.orientation.y = quat[1]
+    out.pose.orientation.z = quat[2]
+    out.pose.orientation.w = quat[3]
+    return out
+
 def quaternion_from_euler(rpy) :
     quat = Rotation.from_euler("xyz", rpy, degrees=False).as_quat()
     out = Quaternion()

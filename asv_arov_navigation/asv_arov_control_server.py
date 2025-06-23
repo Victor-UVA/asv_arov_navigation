@@ -1,5 +1,6 @@
 import rclpy
 import math
+import numpy as np
 from enum import Enum
 from rclpy.node import Node
 from rclpy.action import ActionServer
@@ -13,7 +14,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion
+from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion, transform_pose_stamped
 
 class ControlState(Enum) :
     STARTING = 0
@@ -111,8 +112,15 @@ class ControlActionServer(Node) :
     
     def setup_routine_in_frame(self, frame_id) :
         out = []
+        t = None
+        while True :
+            try :
+                t = self.tf_buffer.lookup_transform('map', frame_id, rclpy.time.Time())
+                break
+            except TransformException as ex :
+                self.get_logger().info(f'Could not get AprilTag transform: {ex}')
         for i in self.fence_frame_cleaning_routine_poses :
-            out.append(build_pose_stamped(self.get_clock().now(), frame_id, [i.pose.position.x, i.pose.position.y, i.pose.position.z], i.pose.orientation))
+            out.append(transform_pose_stamped(i, t))
         return out
     
     def run_state_machine(self) :

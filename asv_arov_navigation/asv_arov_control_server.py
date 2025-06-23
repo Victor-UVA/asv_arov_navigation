@@ -73,6 +73,7 @@ class ControlActionServer(Node) :
         goal_msg = NavigationAction.Goal()
         goal_msg.goal = goal
         goal_msg.mode = vehicle
+        self.nav_done = False
 
         self.navigation_action_client.wait_for_server()
         future = self.navigation_action_client.send_goal_async(goal_msg)
@@ -109,14 +110,14 @@ class ControlActionServer(Node) :
             else :
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.CLEANING :
-            # if not self.cleaning_check :
-            #     self.get_logger().info("Cleaning start")
-            #     self.cleaning_check = True
-            #     self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
-            # elif self.cleaning_done :
-            #     self.get_logger().info("Cleaning end")
-            #     self.cleaning_check = False
-            #     self.cleaning_action_client.done = False
+            #if not self.cleaning_check :
+            #    self.get_logger().info("Cleaning start")
+            #    self.cleaning_check = True
+            #    self.cleaning_future = self.send_cleaning_goal(self.fence_frame_cleaning_routine_poses, self.fence_frame_cleaning_routine_directions)
+            #elif self.cleaning_done :
+            #    self.get_logger().info("Cleaning end")
+            #    self.cleaning_check = False
+            #    self.cleaning_action_client.done = False
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.NAVIGATING :
             if not self.navigation_check :

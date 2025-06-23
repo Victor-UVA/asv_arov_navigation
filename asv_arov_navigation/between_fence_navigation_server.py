@@ -111,7 +111,7 @@ class NavigationActionServer(Node):
                 # self.get_logger().info(f"Completed {follower}'s goToPose call")
 
                 while not follow_nav.isTaskComplete():
-                    pass
+                    self.get_logger().info(f'Error: {follow_nav.getFeedback().distance_remaining}')
                 follower_success = True if self.asv_nav.getResult() == 0 else False
                 self.get_logger().info(f"Follower finished moving - success: {follower_success}")
 
@@ -145,7 +145,9 @@ class NavigationActionServer(Node):
     
 def main() -> None:
     rclpy.init()
-    nav_server = NavigationActionServer()
+    arov_navigator = BasicNavigator(namespace="arov")
+    arov_navigator.waitUntilNav2Active(localizer="/arov/pose_publisher")
+    nav_server = NavigationActionServer(arov_navigator)
     rclpy.spin(nav_server)
 
 if __name__ == '__main__':

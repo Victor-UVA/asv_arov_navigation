@@ -33,18 +33,15 @@ def build_transform_stamped(time, parent_frame_id, child_frame_id, transform) :
     return transform_stamped
 
 def transform_pose_stamped(pose_stamped, transform_stamped) :
-    xl = np.array([pose_stamped.pose.position.x + transform_stamped.transform.translation.x, 
-                   pose_stamped.pose.position.y + transform_stamped.transform.translation.y, 
-                   pose_stamped.pose.position.z + transform_stamped.transform.translation.z]
-                   , dtype=np.float64)
+    xl = np.array([[pose_stamped.pose.position.x], [pose_stamped.pose.position.y]], dtype=np.float64)
     R = Rotation.from_quat([transform_stamped.transform.rotation.x, transform_stamped.transform.rotation.y, transform_stamped.transform.rotation.z, transform_stamped.transform.rotation.w])
     xa = R.apply(xl)
     out = PoseStamped()
-    out.pose.position.x = xa[0]
-    out.pose.position.y = xa[1]
-    out.pose.position.z = xa[2]
+    out.pose.position.x = xa[0,0] + transform_stamped.transform.translation.x
+    out.pose.position.y = xa[1,0] + transform_stamped.transform.translation.y
+    out.pose.position.z = pose_stamped.pose.position.z + transform_stamped.transform.translation.z
     Q = Rotation.from_quat([pose_stamped.pose.orientation.x, pose_stamped.pose.orientation.y, pose_stamped.pose.orientation.z, pose_stamped.pose.orientation.w])
-    quat = (R * Q).as_quat()
+    quat = R * Q
     out.pose.orientation.x = quat[0]
     out.pose.orientation.y = quat[1]
     out.pose.orientation.z = quat[2]

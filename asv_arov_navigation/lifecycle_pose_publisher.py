@@ -100,6 +100,7 @@ class PosePublisher(LifecycleNode):
             self.y += data.linear.x * math.sin(self.yaw) * dt
             self.z += data.linear.z * dt
             self.yaw += data.angular.z * dt
+        self.yaw = (self.yaw + math.pi) % (2 * math. pi) - math.pi
     
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')

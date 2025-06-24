@@ -69,13 +69,13 @@ class PosePublisher(LifecycleNode):
         w = 1.8288
 
         r1 = R.from_euler('z', -theta1)
-        p1 = r1.apply(np.array([[x1 + w * math.cos(theta1)], [y1 + w * math.sin(theta1)]], dtype=np.float64))
+        p1 = r1.apply(np.array([x1 + w * math.cos(theta1), y1 + w * math.sin(theta1), 0], dtype=np.float64))
         r2 = R.from_euler('z', -(theta1 + math.pi / 2))
-        p2 = r2.apply(np.array([[x1], [y1]], dtype=np.float64))
+        p2 = r2.apply(np.array([x1, y1, 0], dtype=np.float64))
         r3 = R.from_euler('z', -theta2)
-        p3 = r3.apply(np.array([[x2 + w * math.cos(theta2)], [y2 + w * math.sin(theta2)]], dtype=np.float64))
+        p3 = r3.apply(np.array([x2 + w * math.cos(theta2), y2 + w * math.sin(theta2), 0], dtype=np.float64))
         r4 = R.from_euler('z', -(theta2 - math.pi / 2))
-        p4 = r4.apply(np.array([[x2], [y2]], dtype=np.float64))
+        p4 = r4.apply(np.array([x2, y2, 0], dtype=np.float64))
         self.fence1_transform = [p1[0], p1[1], 0, 0, 0, theta1]
         self.fence2_transform = [p2[0], p2[1], 0, 0, 0, theta1 + math.pi / 2]
         self.fence3_transform = [p3[0], p3[1], 0, 0, 0, theta2]

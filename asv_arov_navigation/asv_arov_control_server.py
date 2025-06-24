@@ -117,7 +117,7 @@ class ControlActionServer(Node) :
         t = None
         while True :
             try :
-                t = self.tf_buffer.lookup_transform(frame_id, 'map', rclpy.time.Time())
+                t = self.tf_buffer.lookup_transform('map', frame_id, rclpy.time.Time())
                 break
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AprilTag transform: {ex}')

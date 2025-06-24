@@ -60,26 +60,28 @@ class PosePublisher(LifecycleNode):
         self.timer = None
         self.last_time = None
 
-        x1 = 0.0
-        y1 = -3.0
-        theta1 = math.pi / 4
-        x2 = 0.0
-        y2 = 3.0
-        theta2 = -math.pi / 4
+        xB = 0.0
+        yB = -3.0
+        thetaA = -math.pi / 4
+        thetaB = -3 * math.pi / 4
+        xD = 0.0
+        yD = 3.0
+        thetaC = 3 * math.pi / 4
+        thetaD = math.pi / 4
         w = 1.8288
 
-        r1 = R.from_euler('z', -theta1)
-        p1 = r1.apply(np.array([x1 + w * math.cos(theta1), y1 + w * math.sin(theta1), 0], dtype=np.float64))
-        r2 = R.from_euler('z', -(theta1 + math.pi / 2))
-        p2 = r2.apply(np.array([x1, y1, 0], dtype=np.float64))
-        r3 = R.from_euler('z', -theta2)
-        p3 = r3.apply(np.array([x2 + w * math.cos(theta2), y2 + w * math.sin(theta2), 0], dtype=np.float64))
-        r4 = R.from_euler('z', -(theta2 - math.pi / 2))
-        p4 = r4.apply(np.array([x2, y2, 0], dtype=np.float64))
-        self.fence1_transform = [p1[0], p1[1], 0, 0, 0, theta1]
-        self.fence2_transform = [p2[0], p2[1], 0, 0, 0, theta1 + math.pi / 2]
-        self.fence3_transform = [p3[0], p3[1], 0, 0, 0, theta2]
-        self.fence4_transform = [p4[0], p4[1], 0, 0, 0, theta2 - math.pi / 2]
+        rA = R.from_euler('z', -thetaA)
+        pA = rA.apply(np.array([xB + w * math.cos(thetaB), yB + w * math.sin(thetaB), 0], dtype=np.float64))
+        rB = R.from_euler('z', -thetaB)
+        pB = rB.apply(np.array([xB, yB, 0], dtype=np.float64))
+        rC = R.from_euler('z', -thetaC)
+        pC = rC.apply(np.array([xD + w * math.cos(thetaD), yD + w * math.sin(thetaD), 0], dtype=np.float64))
+        rD = R.from_euler('z', -thetaD)
+        pD = rD.apply(np.array([xD, yD, 0], dtype=np.float64))
+        self.fence1_transform = [pA[0], pA[1], 0, 0, 0, thetaA]
+        self.fence2_transform = [pB[0], pB[1], 0, 0, 0, thetaB]
+        self.fence3_transform = [pC[0], pC[1], 0, 0, 0, thetaC]
+        self.fence4_transform = [pD[0], pD[1], 0, 0, 0, thetaD]
 
     def cmd_vel_callback(self, data):
         now = self.get_clock().now()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import math
 import rclpy
+import numpy as np
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
@@ -59,13 +60,26 @@ class PosePublisher(LifecycleNode):
         self.timer = None
         self.last_time = None
 
-        self.x1 = 0.0
-        self.y1 = -3.0
-        self.theta1 = 3 * math.pi / 4
-        self.x2 = 0.0
-        self.y2 = 3.0
-        self.theta2 = -math.pi / 4
-        self.w = 1.8288
+        x1 = 0.0
+        y1 = -3.0
+        theta1 = math.pi / 4
+        x2 = 0.0
+        y2 = 3.0
+        theta2 = -math.pi / 4
+        w = 1.8288
+
+        r1 = R.from_euler('z', -theta1)
+        p1 = r1.apply(np.array([[x1 + w * math.cos(theta1)], [y1 + w * math.sin(theta1)]], dtype=np.float64))
+        r2 = R.from_euler('z', -(theta1 + math.pi / 2))
+        p2 = r2.apply(np.array([[x1], [y1]], dtype=np.float64))
+        r3 = R.from_euler('z', -theta2)
+        p3 = r3.apply(np.array([[x2 + w * math.cos(theta2)], [y2 + w * math.sin(theta2)]], dtype=np.float64))
+        r4 = R.from_euler('z', -(theta2 - math.pi / 2))
+        p4 = r4.apply(np.array([[x2], [y2]], dtype=np.float64))
+        self.fence1_transform = [p1[0], p1[1], 0, 0, 0, theta1]
+        self.fence2_transform = [p2[0], p2[1], 0, 0, 0, theta1 + math.pi / 2]
+        self.fence3_transform = [p3[0], p3[1], 0, 0, 0, theta2]
+        self.fence4_transform = [p4[0], p4[1], 0, 0, 0, theta2 - math.pi / 2]
 
     def cmd_vel_callback(self, data):
         now = self.get_clock().now()
@@ -167,10 +181,10 @@ class PosePublisher(LifecycleNode):
 
             if self.get_namespace().strip('/') == "arov" :
                 #self.get_logger().info(f'{self.x1 + self.w * math.sin(self.theta1)} {self.x1} {self.x2 + self.w * math.sin(self.theta2)} {self.x2}')
-                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", [self.x1 + self.w * math.cos(self.theta1), self.y1 + self.w * math.sin(self.theta1), 0, 0, 0, -self.theta1]))
-                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", [self.x1, self.y1, 0, 0, 0, math.pi / 2 - self.theta1]))
-                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_3", [self.x2 + self.w * math.cos(self.theta2), self.y2 + self.w * math.sin(self.theta2), 0, 0, 0, -self.theta2]))
-                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_4", [self.x2, self.y2, 0, 0, 0, math.pi / 2 - self.theta2]))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", self.fence1_transform))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", self.fence2_transform))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_3", self.fence3_transform))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_4", self.fence4_transform))
 
             # Simulated amcl_pose
             pose = PoseWithCovarianceStamped()

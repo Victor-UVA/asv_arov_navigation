@@ -52,7 +52,7 @@ class ControlActionServer(Node) :
         self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 3, 0, 0, 0, 0])]
         self.arov_fence_frame_pairs = [["fence_1", "fence_2"], ["fence_3", "fence_4"]]
         self.arov_fence_switch = 0
-        self.asv_target_pose_id = 0
+        self.asv_target_pose_id = 1
         self.asv_home_pose = None
 
         self.state = ControlState.STARTING
@@ -157,13 +157,13 @@ class ControlActionServer(Node) :
             if not self.navigation_check :
                 self.get_logger().info("Nav start")
                 self.navigation_check = True
+                self.asv_target_pose_id += 1
+                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
+                    self.asv_target_pose_id = 0
                 self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
             elif self.nav_done :
                 self.get_logger().info("Nav end")
                 self.navigation_check = False
-                self.asv_target_pose_id += 1
-                if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
-                    self.asv_target_pose_id = 0
                 self.state = ControlState.CLEANING
 
 def main(args=None) :

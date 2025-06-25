@@ -79,7 +79,7 @@ arov/controller_server:
       min_speed_xy: -1.7
       max_speed_xy: 1.7
       min_speed_theta: -1.7
-      max_vel_theta: 1.7
+      max_vel_theta: 6.0
       acc_lim_theta: 1.7
       decel_lim_theta: -1.7
       # xytheta iterator
@@ -90,7 +90,7 @@ arov/controller_server:
       sim_time: 0.5 # time to simulate path by
       time_granularity: 0.1
       linear_granularity: 0.1
-      angular_granularity: 0.025
+      angular_granularity: 0.1
       include_last_point: True
       limit_vel_cmd_in_traj: True # uses sampled velocity instead of commanded velocity for limits
       # critics
@@ -106,7 +106,7 @@ arov/controller_server:
       PathAlign.scale: 5.0
       PathDist.scale: 20.0
       RotateToGoal.trans_stopped_velocity: 0.05
-      RotateToGoal.slowing_factor: 2.5
+      RotateToGoal.slowing_factor: 1.0
       RotateToGoal.lookahead_time: 1.5
       Twirling.scale: 30.0
 

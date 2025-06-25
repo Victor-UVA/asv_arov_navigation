@@ -61,6 +61,8 @@ class ControlActionServer(Node) :
         
         self.nav_done = False
         self.cleaning_done = False
+        self.nav_goal_handle = None
+        self.cleaning_goal_handle = None
 
         self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
         self.fence_frame_cleaning_routine_directions = []
@@ -71,7 +73,7 @@ class ControlActionServer(Node) :
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
-            self.fence_frame_cleaning_routine_directions.append("left")
+            self.fence_frame_cleaning_routine_directions.append("right")
 
     def send_navigation_goal(self, goal, vehicle) :
         goal_msg = NavigationAction.Goal()
@@ -84,6 +86,7 @@ class ControlActionServer(Node) :
         future.add_done_callback(self.navigation_goal_response_callback)
     
     def navigation_goal_response_callback(self, future) :
+        self.nav_goal_handle = future.result()
         result_future = future.result().get_result_async()
         result_future.add_done_callback(self.navigation_result_callback)
 
@@ -101,6 +104,7 @@ class ControlActionServer(Node) :
         future.add_done_callback(self.cleaning_goal_response_callback)
 
     def cleaning_goal_response_callback(self, future) :
+        self.cleaning_goal_handle = future.result()
         result_future = future.result().get_result_async()
         result_future.add_done_callback(self.cleaning_result_callback)
 

@@ -36,7 +36,7 @@ arov/controller_server:
       lookahead_time: 1.5
 
       use_rotate_to_heading: true
-      rotate_to_heading_angular_vel: 0.1
+      rotate_to_heading_angular_vel: 0.5
       
     
     # Goal checker plugin setup

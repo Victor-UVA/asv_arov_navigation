@@ -234,7 +234,10 @@ class MovementServerManager(Node) :
         command_list = goal.commands
 
         for i, tag_id in enumerate(goals_list[:-1]): # Loop excludes last element
-            rclpy.spin_once(self)
+            rclpy.spin_once(self, timeout_sec=0.1)
+            while self.current_pose is None :
+                self.get_logger().info("No current pose")
+                rclpy.spin_once(self)
             current_goal = goals_list[i]
             next_goal = goals_list[i+1]
 
@@ -289,17 +292,20 @@ class MovementServerManager(Node) :
                 # Send the goal
                 self.get_logger().info(f"Sending GoToDepth goal to {desired_depth:.2f} meters")
                 
-                send_goal_future = self.depth_control_client.send_goal_async(depth_goal)
-                depth_goal_handle = await send_goal_future
+                depth_goal_future = self.depth_control_client.send_goal_async(depth_goal)
+                rclpy.spin_until_future_complete(self, depth_goal_future)
+                depth_goal_handle = depth_goal_future.result()
 
+                self.get_logger().info("not stalling")
                 if not depth_goal_handle.accepted:
                     self.get_logger().warn("Depth goal rejected")
                     goal_handle.abort()
                     return NavigateAprilTags.Result(navigation_completed = False)
-            
-                result_response = await depth_goal_handle.get_result_async()
+
+                result_response = depth_goal_handle.get_result_async()
+                rclpy.spin_until_future_complete(self, result_response)
                 
-                if not result_response.result.reached_final_depth:
+                if not result_response.result().result.reached_final_depth:
                     self.get_logger().warn("Depth goal failed")
                     goal_handle.abort()
                     return NavigateAprilTags.Result(navigation_completed = False)
@@ -355,16 +361,18 @@ class MovementServerManager(Node) :
                 self.get_logger().info(f"Sending GoToSide goal")
                 
                 send_goal_future = self.strafe_control_client.send_goal_async(strafe_goal)
-                strafe_goal_handle = await send_goal_future
+                rclpy.spin_until_future_complete(self, send_goal_future)
+                strafe_goal_handle = send_goal_future.result()
 
                 if not strafe_goal_handle.accepted:
                     self.get_logger().warn("Strafe goal rejected")
                     goal_handle.abort()
                     return NavigateAprilTags.Result(navigation_completed = False)
             
-                result_response = await strafe_goal_handle.get_result_async()
+                result_response = strafe_goal_handle.get_result_async()
+                rclpy.spin_until_future_complete(self, result_response)
                 
-                if not result_response.result.target_reached:
+                if not result_response.result().result.target_reached:
                     self.get_logger().warn("Strafe goal failed")
                     goal_handle.abort()
                     return NavigateAprilTags.Result(navigation_completed = False)

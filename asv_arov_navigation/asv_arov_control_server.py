@@ -71,7 +71,7 @@ class ControlActionServer(Node) :
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
-            self.fence_frame_cleaning_routine_directions.append("horizontal")
+            self.fence_frame_cleaning_routine_directions.append("left")
 
     def send_navigation_goal(self, goal, vehicle) :
         goal_msg = NavigationAction.Goal()

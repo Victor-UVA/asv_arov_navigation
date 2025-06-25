@@ -76,25 +76,11 @@ class PosePublisher(LifecycleNode):
         self.fence3_transform = [xD + w * math.cos(thetaD), yD + w * math.sin(thetaD), 0, 0, 0, 3] #math.pi - atag_orientation]
         self.fence4_transform = [xD, yD, 0, 0, 0, 0] #atag_orientation - math.pi]
 
+        self.cmd_vel = None
+
     def cmd_vel_callback(self, data):
-        now = self.get_clock().now()
-        if self.last_time is not None :
-            dt = (self.get_clock().now() - self.last_time).to_msg().nanosec / 1e9
-        else :
-            dt = 0
-        self.last_time = now
-        if self.get_namespace() == "/arov" :
-            self.x += (data.linear.x * math.cos(self.yaw) + data.linear.y * math.sin(self.yaw)) * dt
-            self.y += (data.linear.x * math.sin(self.yaw) + data.linear.y * math.cos(self.yaw)) * dt
-            self.z += data.linear.z * dt
-            self.yaw += data.angular.z * dt
-        elif self.get_namespace() == "/asv" :
-            self.x += data.linear.x * math.cos(self.yaw) * dt
-            self.y += data.linear.x * math.sin(self.yaw) * dt
-            self.z += data.linear.z * dt
-            self.yaw += data.angular.z * dt
-        self.yaw = (self.yaw + math.pi) % (2 * math. pi) - math.pi
-    
+        self.cmd_vel = data
+
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')
 
@@ -145,7 +131,24 @@ class PosePublisher(LifecycleNode):
         if self.use_sim :
 
             now = self.get_clock().now()
-            #self.last_time = now
+
+            if self.last_time is not None :
+                dt = (self.get_clock().now() - self.last_time).to_msg().nanosec / 1e9
+            else :
+                dt = 0
+            self.last_time = now
+            if self.cmd_vel is not None :
+                if self.get_namespace() == "/arov" :
+                    self.x += (self.cmd_vel.linear.x * math.cos(self.yaw) + self.cmd_vel.linear.y * math.sin(self.yaw)) * dt
+                    self.y += (self.cmd_vel.linear.x * math.sin(self.yaw) + self.cmd_vel.linear.y * math.cos(self.yaw)) * dt
+                    self.z += self.cmd_vel.linear.z * dt
+                    self.yaw += self.cmd_vel.angular.z * dt
+                elif self.get_namespace() == "/asv" :
+                    self.x += self.cmd_vel.linear.x * math.cos(self.yaw) * dt
+                    self.y += self.cmd_vel.linear.x * math.sin(self.yaw) * dt
+                    self.z += self.cmd_vel.linear.z * dt
+                    self.yaw += self.cmd_vel.angular.z * dt
+                self.yaw = (self.yaw + math.pi) % (2 * math.pi) - math.pi
 
             tf = TransformStamped()
             tf.header.stamp = now.to_msg()

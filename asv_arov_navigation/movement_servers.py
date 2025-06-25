@@ -39,12 +39,12 @@ class MovementServerManager(Node) :
         #    self.tag_callback,
         #    10
         #)
-        self.odom_sub = self.create_subscription(
-            Odometry,
-            odom_topic,
-            self.odom_callback,
-            10
-        )
+        #self.odom_sub = self.create_subscription(
+        #    Odometry,
+        #    odom_topic,
+        #    self.odom_callback,
+        #    10
+        #)
 
         # Basic Navigator for moving to a pose
         self.navigator = navigator
@@ -182,9 +182,9 @@ class MovementServerManager(Node) :
 
         return build_pose_stamped(self.get_clock().now(), "map", [goal_x, goal_y, follower_pose.pose.position.z, 0, 0, psi - math.pi])
     
-    def odom_callback(self, msg: Odometry):
+    #def odom_callback(self, msg: Odometry):
         #self.get_logger().info('Getting Odometry...')
-        self.current_pose = msg.pose.pose
+    #    self.current_pose = msg.pose.pose
 
     #def tag_callback(self, msg: AprilTagDetectionArray):
     #    self.current_detections = {
@@ -235,9 +235,7 @@ class MovementServerManager(Node) :
 
         for i, tag_id in enumerate(goals_list[:-1]): # Loop excludes last element
             rclpy.spin_once(self, timeout_sec=0.1)
-            while self.current_pose is None :
-                self.get_logger().info("No current pose")
-                rclpy.spin_once(self)
+            self.current_pose = self._get_initial_pose("arov").pose
             current_goal = goals_list[i]
             next_goal = goals_list[i+1]
 
@@ -314,11 +312,11 @@ class MovementServerManager(Node) :
             
             elif command == 'left' or command == 'right':
                 self.get_logger().info(f'Horizontal Command')
-                distance = np.inf
+                #distance = np.inf
                 
                 #while distance > self.goal_tolerance:
-                distance = self.compute_distance(self.current_pose, next_goal.pose)
-                self.get_logger().info(f"Distance {distance:.2f} meters")
+                #distance = self.compute_distance(self.current_pose, next_goal.pose)
+                #self.get_logger().info(f"Distance {distance:.2f} meters")
 
                 self.get_logger().info(f'Spin in place to stafing angle')
                 q = self.get_strafe_heading(self.current_pose, next_goal.pose, command)

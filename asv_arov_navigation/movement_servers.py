@@ -27,8 +27,6 @@ class MovementServerManager(Node) :
         self.follow_distance = 1.0
     
     def fence_clean_init(self, navigator) :
-        # Get topic nameSs
-        #self.declare_parameter('tag_detections_topic', '/tag_detections')
         self.declare_parameter('odom_topic', '/odom')
         #tag_topic = self.get_parameter('tag_detections_topic').get_parameter_value().string_value
         odom_topic = self.get_parameter('odom_topic').get_parameter_value().string_value
@@ -71,8 +69,7 @@ class MovementServerManager(Node) :
         #self.current_detections = {}
         self.current_pose = None
         # April Tag Type
-        self.tag_family = 'tag36h11'
-        #self.goal_offset = 0.5
+        #self.tag_family = 'tag36h11'
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks

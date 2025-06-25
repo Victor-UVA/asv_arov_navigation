@@ -60,15 +60,15 @@ class PosePublisher(LifecycleNode):
         self.timer = None
         self.last_time = None
 
-        xB = 0.0
+        xB = 0
         yB = -3.0
-        thetaA = -math.pi / 4
-        thetaB = -3 * math.pi / 4
+        thetaA = 0 #-math.pi / 4
+        thetaB = 0 #-3 * math.pi / 4
         xD = 0.0
         yD = 3.0
-        thetaC = 3 * math.pi / 4
-        thetaD = math.pi / 4
-        w = 1.8288
+        thetaC = 0 #3 * math.pi / 4
+        thetaD = 0 #math.pi / 4
+        w = 0 #1.8288
 
         rA = R.from_euler('z', -thetaA)
         pA = rA.apply(np.array([xB + w * math.cos(thetaB), yB + w * math.sin(thetaB), 0], dtype=np.float64))

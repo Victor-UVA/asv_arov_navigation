@@ -69,19 +69,12 @@ class PosePublisher(LifecycleNode):
         thetaC = 0 #3 * math.pi / 4
         thetaD = 0 #math.pi / 4
         w = 0 #1.8288
+        atag_orientation = math.pi / 4
 
-        rA = R.from_euler('z', -thetaA)
-        pA = rA.apply(np.array([xB + w * math.cos(thetaB), yB + w * math.sin(thetaB), 0], dtype=np.float64))
-        rB = R.from_euler('z', -thetaB)
-        pB = rB.apply(np.array([xB, yB, 0], dtype=np.float64))
-        rC = R.from_euler('z', -thetaC)
-        pC = rC.apply(np.array([xD + w * math.cos(thetaD), yD + w * math.sin(thetaD), 0], dtype=np.float64))
-        rD = R.from_euler('z', -thetaD)
-        pD = rD.apply(np.array([xD, yD, 0], dtype=np.float64))
-        self.fence1_transform = [pA[0], pA[1], 0, 0, 0, thetaA]
-        self.fence2_transform = [pB[0], pB[1], 0, 0, 0, thetaB]
-        self.fence3_transform = [pC[0], pC[1], 0, 0, 0, thetaC]
-        self.fence4_transform = [pD[0], pD[1], 0, 0, 0, thetaD]
+        self.fence1_transform = [xB + w * math.cos(thetaB), yB + w * math.sin(thetaB), 0, 0, 0, 0] #atag_orientation]
+        self.fence2_transform = [xB, yB, 0, 0, 0, 0] #atag_orientation]
+        self.fence3_transform = [xD + w * math.cos(thetaD), yD + w * math.sin(thetaD), 0, 0, 0, 3] #math.pi - atag_orientation]
+        self.fence4_transform = [xD, yD, 0, 0, 0, 0] #atag_orientation - math.pi]
 
     def cmd_vel_callback(self, data):
         now = self.get_clock().now()

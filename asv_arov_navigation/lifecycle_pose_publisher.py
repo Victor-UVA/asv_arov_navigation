@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import math
 import rclpy
+import numpy as np
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
@@ -11,13 +12,13 @@ from builtin_interfaces.msg import Time
 import rclpy.time
 from tf2_ros import TransformBroadcaster
 from lifecycle_msgs.msg import State as LifecycleState
-from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Twist
 from asv_arov_interfaces.srv import GetOdom
+from asv_arov_navigation.utils import build_transform_stamped, normalize
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -59,24 +60,23 @@ class PosePublisher(LifecycleNode):
         self.timer = None
         self.last_time = None
 
+        x1 = 0
+        y1 = -3
+        x2 = 0
+        y2 = 3
+        w = 1.8288
+        theta = math.pi / 4
+
+        self.fence1_transform = [x1 + w * math.cos(-theta), y1 + w * math.sin(-theta), 0, 0, normalize(-math.pi / 2 + theta - math.pi), -math.pi / 2]
+        self.fence2_transform = [x1, y1, 0, 0, normalize(-math.pi / 2 - theta), -math.pi / 2]
+        self.fence3_transform = [x2 + w * math.cos(math.pi - theta), y2 + w * math.sin(math.pi - theta), 0, 0, normalize(-math.pi / 2 + theta), -math.pi / 2]
+        self.fence4_transform = [x2, y2, 0, 0, normalize(-math.pi / 2 + math.pi - theta), -math.pi / 2]
+
+        self.cmd_vel = None
+
     def cmd_vel_callback(self, data):
-        now = self.get_clock().now()
-        if self.last_time is not None :
-            dt = (self.get_clock().now() - self.last_time).to_msg().nanosec / 1e9
-        else :
-            dt = 0
-        self.last_time = now
-        if self.get_namespace() == "/arov" :
-            self.x += (data.linear.x * math.cos(self.yaw) + data.linear.y * math.sin(self.yaw)) * dt
-            self.y += (data.linear.x * math.sin(self.yaw) + data.linear.y * math.cos(self.yaw)) * dt
-            self.z += data.linear.z * dt
-            self.yaw += data.angular.z * dt
-        elif self.get_namespace() == "/asv" :
-            self.x += data.linear.x * math.cos(self.yaw) * dt
-            self.y += data.linear.x * math.sin(self.yaw) * dt
-            self.z += data.linear.z * dt
-            self.yaw += data.angular.z * dt
-    
+        self.cmd_vel = data
+
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('Configuring...')
 
@@ -127,7 +127,24 @@ class PosePublisher(LifecycleNode):
         if self.use_sim :
 
             now = self.get_clock().now()
-            #self.last_time = now
+
+            if self.last_time is not None :
+                dt = (self.get_clock().now() - self.last_time).to_msg().nanosec / 1e9
+            else :
+                dt = 0
+            self.last_time = now
+            if self.cmd_vel is not None :
+                if self.get_namespace() == "/arov" :
+                    self.x += (self.cmd_vel.linear.x * math.cos(self.yaw) - self.cmd_vel.linear.y * math.sin(self.yaw)) * dt
+                    self.y += (self.cmd_vel.linear.x * math.sin(self.yaw) + self.cmd_vel.linear.y * math.cos(self.yaw)) * dt
+                    self.z += self.cmd_vel.linear.z * dt
+                    self.yaw += self.cmd_vel.angular.z * dt
+                elif self.get_namespace() == "/asv" :
+                    self.x += self.cmd_vel.linear.x * math.cos(self.yaw) * dt
+                    self.y += self.cmd_vel.linear.x * math.sin(self.yaw) * dt
+                    self.z += self.cmd_vel.linear.z * dt
+                    self.yaw += self.cmd_vel.angular.z * dt
+                self.yaw = (self.yaw + math.pi) % (2 * math.pi) - math.pi
 
             tf = TransformStamped()
             tf.header.stamp = now.to_msg()
@@ -156,6 +173,13 @@ class PosePublisher(LifecycleNode):
             tf.transform.translation.z = self.z
             tf.transform.rotation = self.odom.pose.pose.orientation
             self.tf_broadcaster.sendTransform(tf)
+
+            if self.get_namespace().strip('/') == "arov" :
+                #self.get_logger().info(f'{self.x1 + self.w * math.sin(self.theta1)} {self.x1} {self.x2 + self.w * math.sin(self.theta2)} {self.x2}')
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_1", self.fence1_transform))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_2", self.fence2_transform))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_3", self.fence3_transform))
+                self.tf_broadcaster.sendTransform(build_transform_stamped(self.get_clock().now(), "map", "fence_4", self.fence4_transform))
 
             # Simulated amcl_pose
             pose = PoseWithCovarianceStamped()
@@ -207,10 +231,8 @@ class PosePublisher(LifecycleNode):
 def main(args=None):
     rclpy.init(args=args)
     node = PosePublisher()
-    executor = SingleThreadedExecutor()
-    executor.add_node(node)
     try:
-        executor.spin()
+        rclpy.spin(node)
     finally:
         node.destroy_node()
         rclpy.shutdown()

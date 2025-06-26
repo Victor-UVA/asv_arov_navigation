@@ -2,6 +2,7 @@ from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import IfCondition
 
 import os
 
@@ -17,6 +18,7 @@ def generate_launch_description():
     asv_namespace = 'asv'
 
     use_sim = LaunchConfiguration('use_sim', default=False)
+    no_cleaner_startup = LaunchConfiguration('no_cleaner_startup', default=True)
 
     ld = LaunchDescription([
         Node(
@@ -26,8 +28,9 @@ def generate_launch_description():
         ),
         Node(
             package='asv_arov_navigation',
-            executable='movement_server',
-            parameters=[{'use_sim': use_sim}]
+            executable='between_fence_navigation_server',
+            parameters=[{'use_sim': use_sim}],
+            condition=IfCondition(no_cleaner_startup)
         ),
         Node(
             namespace=arov_namespace,

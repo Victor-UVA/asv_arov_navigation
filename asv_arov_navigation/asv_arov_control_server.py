@@ -27,7 +27,7 @@ class ControlActionServer(Node) :
 
     def __init__(self) :
         super().__init__('control_action_server')
-        #self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
+        self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
         self.navigation_action_client = ActionClient(self, NavigationAction, 'navigation_action')
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
 
@@ -77,7 +77,7 @@ class ControlActionServer(Node) :
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
-            self.fence_frame_cleaning_routine_directions.append("right")
+            self.fence_frame_cleaning_routine_directions.append("left")
 
     def send_navigation_goal(self, goal, vehicle) :
         goal_msg = NavigationAction.Goal()

@@ -53,8 +53,8 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0, -3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 3, 0, 0, 0, 0])]
-        self.arov_fence_frame_pairs = [["fence_1", "fence_2"], ["fence_3", "fence_4"]]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0.5, 0, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 3, 0, 0, 0, 0])]
+        self.arov_fence_frame_pairs = [["tag36h11:1", "tag36h11:2"], ["tag36h11:3", "tag36h11:4"]]
         self.arov_fence_switch = 0
         self.asv_target_pose_id = 1
         self.asv_home_pose = None
@@ -68,15 +68,15 @@ class ControlActionServer(Node) :
         self.nav_goal_handle = None
         self.cleaning_goal_handle = None
 
-        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, self.cleaning_routine_apriltag_clearance, 0, math.pi, 0])]
+        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0])]
         self.fence_frame_cleaning_routine_directions = []
 
         for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
-            strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi, 0]))
+            strip_depth = self.cleaning_routine_depth if previous_pos.y == 0 else 0
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
             self.fence_frame_cleaning_routine_directions.append("right")
 
     def send_navigation_goal(self, goal, vehicle) :

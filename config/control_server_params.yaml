@@ -5,4 +5,4 @@ control_action_server:
     cleaning_routine_strip_width: 0.3048
     cleaning_routine_apriltag_x_offset: 0.0
     cleaning_routine_apriltag_y_offset: 0.0
-    cleaning_routine_apriltag_clearance: 0.0
+    cleaning_routine_apriltag_clearance: 0.5

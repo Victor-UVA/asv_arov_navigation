@@ -35,13 +35,15 @@ class ControlActionServer(Node) :
         self.declare_parameter('cleaning_routine_depth', 0.0)
         self.declare_parameter('cleaning_routine_width', 0.0)
         self.declare_parameter('cleaning_routine_strip_width', 0.0)
-        self.declare_parameter('cleaning_routine_apriltag_offset', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_x_offset', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_y_offset', 0.0)
         self.declare_parameter('cleaning_routine_apriltag_clearance', 0.0)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
         self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().double_value
         self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().double_value
         self.cleaning_routine_strip_width: float = self.get_parameter('cleaning_routine_strip_width').get_parameter_value().double_value
-        self.cleaning_routine_apriltag_offset: float = self.get_parameter('cleaning_routine_apriltag_offset').get_parameter_value().double_value
+        self.cleaning_routine_apriltag_x_offset: float = self.get_parameter('cleaning_routine_apriltag_x_offset').get_parameter_value().double_value
+        self.cleaning_routine_apriltag_y_offset: float = self.get_parameter('cleaning_routine_apriltag_y_offset').get_parameter_value().double_value
         self.cleaning_routine_apriltag_clearance: float = self.get_parameter('cleaning_routine_apriltag_clearance').get_parameter_value().double_value
 
         self.asv_pose = None
@@ -64,15 +66,15 @@ class ControlActionServer(Node) :
         self.nav_goal_handle = None
         self.cleaning_goal_handle = None
 
-        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, 0])]
+        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, self.cleaning_routine_apriltag_clearance, 0, 0, -math.pi / 2])]
         self.fence_frame_cleaning_routine_directions = []
 
         for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
             strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, 0, -math.pi / 2]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, 0, -math.pi / 2]))
             self.fence_frame_cleaning_routine_directions.append("right")
 
     def send_navigation_goal(self, goal, vehicle) :
@@ -126,9 +128,9 @@ class ControlActionServer(Node) :
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AprilTag transform: {ex}')
         for i in self.fence_frame_cleaning_routine_poses :
-            self.get_logger().info(f'Pose in AprilTag frame: {i.pose.position} \n Translation from {frame_id}: {t.transform.translation}')
+            self.get_logger().info(f'Pose in AprilTag frame: {i.pose.position} \n Orientation in AprilTag frame: {i.pose.orientation} \n Translation from {frame_id}: {t.transform.translation} \n Rotation from {frame_id}: {t.transform.rotation}')
             out.append(transform_pose_stamped(i, t))
-            self.get_logger().info(f'Pose in map frame: {out[-1].pose.position}')
+            self.get_logger().info(f'Pose in map frame: {out[-1].pose.position} \n Orientation in map frame: {out[-1].pose.orientation}')
         return out
     
     def run_state_machine(self) :

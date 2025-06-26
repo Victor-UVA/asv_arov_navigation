@@ -18,7 +18,7 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Twist
 from asv_arov_interfaces.srv import GetOdom
-from asv_arov_navigation.utils import build_transform_stamped
+from asv_arov_navigation.utils import build_transform_stamped, normalize
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -60,21 +60,17 @@ class PosePublisher(LifecycleNode):
         self.timer = None
         self.last_time = None
 
-        xB = 0
-        yB = -3.0
-        thetaA = 0 #-math.pi / 4
-        thetaB = 0 #-3 * math.pi / 4
-        xD = 0.0
-        yD = 3.0
-        thetaC = 0 #3 * math.pi / 4
-        thetaD = 0 #math.pi / 4
-        w = 0 #1.8288
-        atag_orientation = math.pi / 4
+        x1 = 0
+        y1 = -3
+        x2 = 0
+        y2 = 3
+        w = 1.8288
+        theta = math.pi / 4
 
-        self.fence1_transform = [xB + w * math.cos(thetaB), yB + w * math.sin(thetaB), 0, 0, 0, 0] #atag_orientation]
-        self.fence2_transform = [xB, yB, 0, 0, 0, 0] #atag_orientation]
-        self.fence3_transform = [xD + w * math.cos(thetaD), yD + w * math.sin(thetaD), 0, 0, 0, 3] #math.pi - atag_orientation]
-        self.fence4_transform = [xD, yD, 0, 0, 0, 0] #atag_orientation - math.pi]
+        self.fence1_transform = [x1 + w * math.cos(-theta), y1 + w * math.sin(-theta), 0, 0, normalize(-math.pi / 2 + theta - math.pi), -math.pi / 2]
+        self.fence2_transform = [x1, y1, 0, 0, normalize(-math.pi / 2 - theta), -math.pi / 2]
+        self.fence3_transform = [x2 + w * math.cos(math.pi - theta), y2 + w * math.sin(math.pi - theta), 0, 0, normalize(-math.pi / 2 + theta), -math.pi / 2]
+        self.fence4_transform = [x2, y2, 0, 0, normalize(-math.pi / 2 + math.pi - theta), -math.pi / 2]
 
         self.cmd_vel = None
 
@@ -139,7 +135,7 @@ class PosePublisher(LifecycleNode):
             self.last_time = now
             if self.cmd_vel is not None :
                 if self.get_namespace() == "/arov" :
-                    self.x += (self.cmd_vel.linear.x * math.cos(self.yaw) + self.cmd_vel.linear.y * math.sin(self.yaw)) * dt
+                    self.x += (self.cmd_vel.linear.x * math.cos(self.yaw) - self.cmd_vel.linear.y * math.sin(self.yaw)) * dt
                     self.y += (self.cmd_vel.linear.x * math.sin(self.yaw) + self.cmd_vel.linear.y * math.cos(self.yaw)) * dt
                     self.z += self.cmd_vel.linear.z * dt
                     self.yaw += self.cmd_vel.angular.z * dt

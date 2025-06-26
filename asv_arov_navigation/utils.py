@@ -4,6 +4,7 @@ from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import TransformStamped
 from scipy.spatial.transform import Rotation
 import numpy as np
+import math
 
 def build_pose_stamped(time, frame_id, pose, orientation=None) :
     pose_stamped = PoseStamped()
@@ -59,3 +60,6 @@ def quaternion_from_euler(rpy) :
 
 def euler_from_quaternion(quat) :
     return Rotation.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler("xyz", degrees=False)
+
+def normalize(theta) :
+    return (theta + math.pi) % (2 * math.pi) - math.pi

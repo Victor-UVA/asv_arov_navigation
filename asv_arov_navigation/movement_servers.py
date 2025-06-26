@@ -25,6 +25,7 @@ class MovementServerManager(Node) :
         self.arov_nav = arov_navigator
 
         self.follow_distance = 1.0
+        self.following_threshold = 1.0
     
     def fence_clean_init(self, navigator) :
         self.declare_parameter('odom_topic', '/odom')
@@ -121,18 +122,15 @@ class MovementServerManager(Node) :
                 follower = 'asv'
                 follow_nav = self.asv_nav
                 self.get_logger().info("ASV set as follower")
-                
+            follower_goal_pose = None
             while not lead_nav.isTaskComplete():
                 leader_current_pose = self._get_initial_pose(leader)
-                follower_current_pose = self._get_initial_pose(follower)
-                follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose, self.follow_distance)
-
-                follow_nav.setInitialPose(follower_current_pose)
-                # self.get_logger().info(f"Got {follower}'s initial pose")
-                follow_nav.cancelTask()
-                # self.get_logger().info(f"Canceled {follower}'s current goto")
-                follow_nav.goToPose(follower_goal_pose)
-                # self.get_logger().info(f"Completed {follower}'s goToPose call")
+                if follower_goal_pose is None or self.compute_distance(leader_current_pose.pose, follower_goal_pose.pose) > self.following_threshold :
+                    follower_current_pose = self._get_initial_pose(follower)
+                    follower_goal_pose = self._calculate_pose(follower_current_pose, leader_current_pose, self.follow_distance)
+                    follow_nav.setInitialPose(follower_current_pose)
+                    follow_nav.cancelTask()
+                    follow_nav.goToPose(follower_goal_pose)
 
             if lead_nav.isTaskComplete():
                 leader_success = True if lead_nav.getResult() == 0 else False
@@ -327,8 +325,8 @@ class MovementServerManager(Node) :
                 pose.pose.position.y = self.current_pose.position.y
                 pose.pose.orientation = q
                 self.navigator.goToPose(pose)
-
-                start_time = self.get_clock().now()
+                self.get_logger().info(f"{self.current_pose.orientation} + {next_goal.pose.orientation} = {q}")
+                tart_time = self.get_clock().now()
                 # 4. Spin while tag is not yet detected and goal not reached
                 while rclpy.ok() and not self.navigator.isTaskComplete():
                     elapsed_time = (self.get_clock().now() - start_time).nanoseconds / 1e9  # seconds

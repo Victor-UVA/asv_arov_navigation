@@ -133,12 +133,6 @@ class ControlActionServer(Node) :
         while True :
             try :
                 t = self.tf_buffer.lookup_transform('map', frame_id, rclpy.time.Time())
-                #t_position_new = np.array([[0, 0, 1], [1, 0, 0], [0, -1, 0]], dtype=np.float64) @ np.array([[t.transform.translation.x], [t.transform.translation.y], [t.transform.translation.z]], dtype=np.float64)
-                #t.transform.translation.x = t_position_new[0]
-                #t.transform.translation.y = t_position_new[1]
-                #t.transform.translation.z = t_position_new[2]
-                #rpy = euler_from_quaternion(t.transform.rotation)
-                #t.transform.rotation = quaternion_from_euler([rpy[1], rpy[2], rpy[0]])
                 break
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AprilTag transform: {ex}')

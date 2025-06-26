@@ -66,15 +66,15 @@ class ControlActionServer(Node) :
         self.nav_goal_handle = None
         self.cleaning_goal_handle = None
 
-        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, self.cleaning_routine_apriltag_offset, 0, 0, 0, math.pi])]
+        self.fence_frame_cleaning_routine_poses = [build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, 0, 0, 0, math.pi])]
         self.fence_frame_cleaning_routine_directions = []
 
         for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].pose.position
             strip_depth = self.cleaning_routine_depth if previous_pos.z == 0 else 0
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y, strip_depth, 0, 0, math.pi]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, 0, math.pi]))
             self.fence_frame_cleaning_routine_directions.append("vertical")
-            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [self.cleaning_routine_apriltag_clearance, previous_pos.y + self.cleaning_routine_strip_width, strip_depth, 0, 0, math.pi]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, 0, math.pi]))
             self.fence_frame_cleaning_routine_directions.append("right")
 
     def send_navigation_goal(self, goal, vehicle) :
@@ -124,12 +124,12 @@ class ControlActionServer(Node) :
         while True :
             try :
                 t = self.tf_buffer.lookup_transform('map', frame_id, rclpy.time.Time())
-                t_position_new = np.array([[0, 0, 1], [1, 0, 0], [0, -1, 0]], dtype=np.float64) @ np.array([[t.transform.translation.x], [t.transform.translation.y], [t.transform.translation.z]], dtype=np.float64)
-                t.transform.translation.x = t_position_new[0]
-                t.transform.translation.y = t_position_new[1]
-                t.transform.translation.z = t_position_new[2]
-                rpy = euler_from_quaternion(t.transform.rotation)
-                t.transform.rotation = quaternion_from_euler([rpy[1], rpy[2], rpy[0]])
+                #t_position_new = np.array([[0, 0, 1], [1, 0, 0], [0, -1, 0]], dtype=np.float64) @ np.array([[t.transform.translation.x], [t.transform.translation.y], [t.transform.translation.z]], dtype=np.float64)
+                #t.transform.translation.x = t_position_new[0]
+                #t.transform.translation.y = t_position_new[1]
+                #t.transform.translation.z = t_position_new[2]
+                #rpy = euler_from_quaternion(t.transform.rotation)
+                #t.transform.rotation = quaternion_from_euler([rpy[1], rpy[2], rpy[0]])
                 break
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AprilTag transform: {ex}')

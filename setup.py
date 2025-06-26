@@ -30,11 +30,13 @@ setup(
             'asv_nav_test = asv_arov_navigation.asv_nav_test:main',
             'arov_nav = asv_arov_navigation.arov_nav:main',
             'asv_arov_control_server = asv_arov_navigation.asv_arov_control_server:main',
-            'arov_navigation_server = asv_arov_navigation.arov_navigation_server:main',
             'asv_nav = asv_arov_navigation.asv_nav:main',
-            'movement_server = asv_arov_navigation.movement_server:main',
+            'between_fence_navigation_server = asv_arov_navigation.between_fence_navigation_server:main',
             'control_server_test = asv_arov_navigation.control_server_test:main',
-            'lifecycle_pose_publisher = asv_arov_navigation.lifecycle_pose_publisher:main'
+            'lifecycle_pose_publisher = asv_arov_navigation.lifecycle_pose_publisher:main',
+            'movement_servers = asv_arov_navigation.movement_servers:main',
+            'depth_control_server_test = asv_arov_navigation.depth_control_server_test:main',
+            'set_depth = asv_arov_navigation.set_depth:main'
         ],
     },
 )

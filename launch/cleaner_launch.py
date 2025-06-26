@@ -34,16 +34,5 @@ def generate_launch_description() :
                     'odom_topic': '/arov/odom'
                 }
             ],
-        ),
-        Node(
-            package='robot_guidance_pkg',
-            executable='apriltag_navigation_server',
-            name='apriltag_navigation_server',
-            parameters=[
-                {
-                    'tag_detections_topic': '/tag_detections',
-                    'odom_topic': '/arov/odom'
-                }
-            ],
-        ),
+        )
     ])

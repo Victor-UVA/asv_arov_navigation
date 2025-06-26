@@ -10,7 +10,7 @@ from asv_arov_interfaces.action import ControlModeAction
 from asv_arov_interfaces.action import NavigationAction
 from robot_guidance_interfaces.action import NavigateAprilTags
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseArray
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -45,6 +45,8 @@ class ControlActionServer(Node) :
         self.cleaning_routine_apriltag_y_offset: float = self.get_parameter('cleaning_routine_apriltag_y_offset').get_parameter_value().double_value
         self.cleaning_routine_apriltag_z_offset: float = self.get_parameter('cleaning_routine_apriltag_z_offset').get_parameter_value().double_value
         self.cleaning_routine_apriltag_clearance: float = self.get_parameter('cleaning_routine_apriltag_clearance').get_parameter_value().double_value
+
+        self.pose_pub = self.create_publisher(PoseArray, "pose_array", 10)
 
         self.asv_pose = None
 
@@ -117,7 +119,14 @@ class ControlActionServer(Node) :
         if goal_handle.request.mode == 1 :
             self.create_timer(1, self.run_state_machine)
         return ControlModeAction.Result()
-    
+
+    def publish_poses(self, pose_list) :
+        msg = PoseArray()
+        msg.header.frame_id = 'map'
+        pose_only_list = [p.pose for p in pose_list]
+        msg.poses = pose_only_list
+        self.pose_pub.publish(msg)
+
     def setup_routine_in_frame(self, frame_id) :
         out = []
         t = None
@@ -137,6 +146,7 @@ class ControlActionServer(Node) :
             self.get_logger().info(f'Pose in AprilTag frame: {i.pose.position} \n Orientation in AprilTag frame: {i.pose.orientation} \n Translation from {frame_id}: {t.transform.translation} \n Rotation from {frame_id}: {t.transform.rotation}')
             out.append(transform_pose_stamped(i, t))
             self.get_logger().info(f'Pose in map frame: {out[-1].pose.position} \n Orientation in map frame: {out[-1].pose.orientation}')
+        self.publish_poses(out)
         return out
     
     def run_state_machine(self) :

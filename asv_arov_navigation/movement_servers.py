@@ -74,7 +74,7 @@ class MovementServerManager(Node) :
 
     def navigation_callback(self, msg):
         if msg.request.mode == 0:   # stop all tasks
-            self.send_goal(PoseStamped(), PoseStamped(), 0) # AROV cancel task
+            self.arov_nav.cancelTask()
             self.asv_nav.cancelTask()
 
         else:

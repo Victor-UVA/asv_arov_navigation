@@ -54,8 +54,8 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [0.5, 0, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [0, 3, 0, 0, 0, 0])]
-        self.arov_fence_frame_pairs = [["tag36h11:1", "tag36h11:2"], ["tag36h11:3", "tag36h11:4"]]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [-2, 1.5, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [-2, 4, 0, 0, 0, 0])]
+        self.arov_fence_frame_pairs = [["tag36h11:19", "tag36h11:20"], ["", ""]]
         self.arov_fence_switch = 0
         self.asv_target_pose_id = 1
         self.asv_home_pose = None
@@ -187,10 +187,14 @@ class ControlActionServer(Node) :
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.CLEANING :
             if not self.cleaning_check :
-                self.get_logger().info("Cleaning start")
-                self.cleaning_check = True
-                self.toggle_cleaners(True)
-                self.send_cleaning_goal(self.setup_routine_in_frame(self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch]), self.fence_frame_cleaning_routine_directions)
+                if self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch] != "" :
+                    self.get_logger().info("Cleaning start")
+                    self.cleaning_check = True
+                    self.toggle_cleaners(True)
+                    self.send_cleaning_goal(self.setup_routine_in_frame(self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch]), self.fence_frame_cleaning_routine_directions)
+                else :
+                    self.arov_fence_switch = 0
+                    self.state = ControlState.NAVIGATING
             elif self.cleaning_done :
                 self.get_logger().info("Cleaning end")
                 self.toggle_cleaners(False)

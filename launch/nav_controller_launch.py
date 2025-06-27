@@ -8,7 +8,7 @@ import os
 
 def generate_launch_description():
     pkg_share = FindPackageShare(package='asv_arov_navigation').find('asv_arov_navigation')
-    map = os.path.join(pkg_share, 'config', 'dog_pool.yaml')
+    map = os.path.join(pkg_share, 'config', 'demo_tank.yaml')
     arov_params = os.path.join(pkg_share, 'config', 'arov_nav2_params.yaml')
     asv_params = os.path.join(pkg_share, 'config', 'asv_nav2_params.yaml')
     control_server_params = os.path.join(pkg_share, 'config', 'control_server_params.yaml')

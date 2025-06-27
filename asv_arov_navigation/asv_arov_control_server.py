@@ -29,9 +29,7 @@ class ControlActionServer(Node) :
         super().__init__('control_action_server')
         self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
         self.navigation_action_client = ActionClient(self, NavigationAction, 'navigation_action')
-        self.action_server = ActionServer(self, ControlModeAction, 'control_action', 
-                                          execute_callback=self.execute_callback_async,
-                                          cancel_callback=self.cancel_callback)
+        self.action_server = ActionServer(self, ControlModeAction, 'control_action', execute_callback=self.execute_callback_async)
         self.toggle_cleaners_client = self.create_client(SetPump, '/set_pump')
 
         self.declare_parameter('use_sim', False)
@@ -129,22 +127,26 @@ class ControlActionServer(Node) :
         self.cleaning_done = True
         
     def execute_callback_async(self, goal_handle) :
+        mode_string = "STOP" if goal_handle.request.mode == 0 else "START" if goal_handle.request.mode == 1 else "HOME"
+        self.get_logger().info(f"Receiving task with mode {mode_string}")
         if goal_handle.request.mode == 0 :
             if self.timer is not None :
                 self.timer.destroy()
-            if self.cleaning_done is not None :
+            if self.cleaning_goal_handle is not None :
                 self.cleaning_goal_handle.cancel()
             if self.nav_goal_handle is not None :
                 self.nav_goal_handle.cancel()
+                self.send_navigation_goal(None, 0)
         elif goal_handle.request.mode == 1 :
             self.timer = self.create_timer(1, self.run_state_machine)
         elif goal_handle.request.mode == 2 :
             if self.timer is not None :
                 self.timer.destroy()
-            if self.cleaning_done is not None :
+            if self.cleaning_goal_handle is not None :
                 self.cleaning_goal_handle.cancel()
             if self.nav_goal_handle is not None :
                 self.nav_goal_handle.cancel()
+                self.send_navigation_goal(None, 0)
             self.send_navigation_goal(self.asv_home_pose, 1)
         return ControlModeAction.Result()
 
@@ -180,7 +182,7 @@ class ControlActionServer(Node) :
                 except TransformException as ex :
                     self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                 if t is not None :
-                    self.asv_home_pose = build_pose_stamped(self.get_clock().now(), "map", [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z], t.transform.orientation)
+                    self.asv_home_pose = build_pose_stamped(self.get_clock().now(), "map", [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z], t.transform.rotation)
             else :
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.CLEANING :

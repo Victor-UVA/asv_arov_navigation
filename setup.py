@@ -36,7 +36,8 @@ setup(
             'lifecycle_pose_publisher = asv_arov_navigation.lifecycle_pose_publisher:main',
             'movement_servers = asv_arov_navigation.movement_servers:main',
             'depth_control_server_test = asv_arov_navigation.depth_control_server_test:main',
-            'set_depth = asv_arov_navigation.set_depth:main'
+            'set_depth = asv_arov_navigation.set_depth:main',
+            'control_client = asv_arov_navigation.control_client:main'
         ],
     },
 )

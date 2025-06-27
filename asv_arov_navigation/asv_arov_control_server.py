@@ -6,9 +6,9 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 
-from asv_arov_interfaces.action import ControlModeAction
-from asv_arov_interfaces.action import NavigationAction
+from asv_arov_interfaces.action import ControlModeAction, NavigationAction
 from robot_guidance_interfaces.action import NavigateAprilTags
+from asv_arov_interfaces.srv import SetPump
 
 from geometry_msgs.msg import PoseStamped, PoseArray
 
@@ -30,6 +30,7 @@ class ControlActionServer(Node) :
         self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
         self.navigation_action_client = ActionClient(self, NavigationAction, 'navigation_action')
         self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
+        self.toggle_cleaners_client = self.create_client(SetPump, '/set_pump')
 
         self.declare_parameter('use_sim', False)
         self.declare_parameter('cleaning_routine_depth', 0.0)
@@ -79,6 +80,14 @@ class ControlActionServer(Node) :
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
             self.fence_frame_cleaning_routine_directions.append("left")
 
+    def toggle_cleaners(self, active) :
+        self.get_logger().info("Activating cleaner pump" if active else "Deactivating cleaner pump")
+        if not self.use_sim :
+            request = SetPump.Request()
+            request.set_pump = active
+            self.toggle_cleaners_client.wait_for_service()
+            self.toggle_cleaners_client.call_async(request)
+    
     def send_navigation_goal(self, goal, vehicle) :
         goal_msg = NavigationAction.Goal()
         goal_msg.goal = goal
@@ -152,16 +161,18 @@ class ControlActionServer(Node) :
                 except TransformException as ex :
                     self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
                 if t is not None :
-                    self.asv_home_pose = [t.transform.translation.x, t.transform.translation.y, euler_from_quaternion(t.transform.rotation)[2]]
+                    self.asv_home_pose = build_pose_stamped(self.get_clock().now(), "map", [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z], t.transform.orientation)
             else :
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.CLEANING :
             if not self.cleaning_check :
                 self.get_logger().info("Cleaning start")
                 self.cleaning_check = True
+                self.toggle_cleaners(True)
                 self.send_cleaning_goal(self.setup_routine_in_frame(self.arov_fence_frame_pairs[self.asv_target_pose_id][self.arov_fence_switch]), self.fence_frame_cleaning_routine_directions)
             elif self.cleaning_done :
                 self.get_logger().info("Cleaning end")
+                self.toggle_cleaners(False)
                 self.cleaning_check = False
                 self.cleaning_action_client.done = False
                 if self.arov_fence_switch == 1 :

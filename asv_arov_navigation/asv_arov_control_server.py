@@ -29,7 +29,9 @@ class ControlActionServer(Node) :
         super().__init__('control_action_server')
         self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
         self.navigation_action_client = ActionClient(self, NavigationAction, 'navigation_action')
-        self.action_server = ActionServer(self, ControlModeAction, 'control_action', self.execute_callback_async)
+        self.action_server = ActionServer(self, ControlModeAction, 'control_action', 
+                                          execute_callback=self.execute_callback_async,
+                                          cancel_callback=self.cancel_callback)
         self.toggle_cleaners_client = self.create_client(SetPump, '/set_pump')
 
         self.declare_parameter('use_sim', False)
@@ -80,6 +82,8 @@ class ControlActionServer(Node) :
             self.fence_frame_cleaning_routine_poses.append(build_pose_stamped(self.get_clock().now(), "map", [previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
             self.fence_frame_cleaning_routine_directions.append("left")
 
+        self.timer = None
+    
     def toggle_cleaners(self, active) :
         self.get_logger().info("Activating cleaner pump" if active else "Deactivating cleaner pump")
         if not self.use_sim :
@@ -125,8 +129,23 @@ class ControlActionServer(Node) :
         self.cleaning_done = True
         
     def execute_callback_async(self, goal_handle) :
-        if goal_handle.request.mode == 1 :
-            self.create_timer(1, self.run_state_machine)
+        if goal_handle.request.mode == 0 :
+            if self.timer is not None :
+                self.timer.destroy()
+            if self.cleaning_done is not None :
+                self.cleaning_goal_handle.cancel()
+            if self.nav_goal_handle is not None :
+                self.nav_goal_handle.cancel()
+        elif goal_handle.request.mode == 1 :
+            self.timer = self.create_timer(1, self.run_state_machine)
+        elif goal_handle.request.mode == 2 :
+            if self.timer is not None :
+                self.timer.destroy()
+            if self.cleaning_done is not None :
+                self.cleaning_goal_handle.cancel()
+            if self.nav_goal_handle is not None :
+                self.nav_goal_handle.cancel()
+            self.send_navigation_goal(self.asv_home_pose, 1)
         return ControlModeAction.Result()
 
     def publish_poses(self, pose_list) :
@@ -187,7 +206,7 @@ class ControlActionServer(Node) :
                 self.asv_target_pose_id += 1
                 if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                     self.asv_target_pose_id = 0
-                self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 4)
+                self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
             elif self.nav_done :
                 self.get_logger().info("Nav end")
                 self.navigation_check = False

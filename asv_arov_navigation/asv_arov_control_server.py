@@ -54,8 +54,8 @@ class ControlActionServer(Node) :
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [-2, 1.5, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [-2, 4, 0, 0, 0, 0])]
-        self.arov_fence_frame_pairs = [["tag36h11:19", "tag36h11:20"], ["", ""]]
+        self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [-2, 3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [-2, 3, 0, 0, 0, 0])]
+        self.arov_fence_frame_pairs = [['tag36h11:20', ""], ['', '']]#[["tag36h11:19", "tag36h11:20"], ["", ""]]
         self.arov_fence_switch = 0
         self.asv_target_pose_id = 1
         self.asv_home_pose = None
@@ -206,16 +206,16 @@ class ControlActionServer(Node) :
                 else :
                     self.arov_fence_switch = 1
         elif self.state == ControlState.NAVIGATING :
-            if not self.navigation_check :
-                self.get_logger().info("Nav start")
-                self.navigation_check = True
+            #if not self.navigation_check :
+            #    self.get_logger().info("Nav start")
+            #    self.navigation_check = True
                 self.asv_target_pose_id += 1
                 if self.asv_target_pose_id % len(self.asv_target_poses) == 0 :
                     self.asv_target_pose_id = 0
-                self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
-            elif self.nav_done :
-                self.get_logger().info("Nav end")
-                self.navigation_check = False
+            #    self.send_navigation_goal(self.asv_target_poses[self.asv_target_pose_id], 1)
+            #elif self.nav_done :
+            #    self.get_logger().info("Nav end")
+            #    self.navigation_check = False
                 self.state = ControlState.CLEANING
 
 def main(args=None) :

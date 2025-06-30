@@ -65,9 +65,9 @@ asv/controller_server:
 
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.75
-      max_angular_vel: 0.5
-      max_angular_accel: 1.0
+      desired_linear_vel: 0.1
+      max_angular_vel: 0.2
+      max_angular_accel: 0.2
       min_approach_linear_velocity: 0.1
       approach_velocity_scaling_dist: 0.3
 
@@ -126,7 +126,7 @@ asv/global_costmap:
 asv/map_server:
   ros__parameters:
     use_sim_time: false
-    yaml_filename: "dog_pool.yaml"
+    yaml_filename: "demo_tank.yaml"
     frame_id: "map"
     topic_name: "map"
 

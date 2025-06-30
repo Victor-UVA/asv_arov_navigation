@@ -1,8 +1,8 @@
 control_action_server:
   ros__parameters:
-    cleaning_routine_depth: -1
+    cleaning_routine_depth: -0.5
     cleaning_routine_width: 1.8288
     cleaning_routine_strip_width: 0.3048
     cleaning_routine_apriltag_x_offset: 0.0
     cleaning_routine_apriltag_y_offset: 0.0
-    cleaning_routine_apriltag_clearance: 0.5
+    cleaning_routine_apriltag_clearance: 1.0

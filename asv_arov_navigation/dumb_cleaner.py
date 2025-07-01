@@ -4,7 +4,7 @@ import numpy as np
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from sensor_msgs.msg import Image
-from asv_arov_interfaces.action import CleanAction
+from asv_arov_interfaces.action import DumbCleanAction
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge
 import cv2
@@ -20,7 +20,7 @@ class DumbCleaner(Node) :
 
         self.publisher = self.create_publisher(Twist, 'arov/cmd_vel')
         self.camera_subscriber = self.create_subscription(Image, '/image_rect', self.camera_feed_callback, 10)
-        self.action_server = ActionServer(self, CleanAction, 'dumb_cleaner', self.execute_callback)
+        self.action_server = ActionServer(self, DumbCleanAction, 'dumb_cleaner', self.execute_callback)
 
         self.COLORS = [[(), ()], [(), ()]]
         self.END_COLORS = [[(), ()], [(), ()]]
@@ -106,7 +106,7 @@ class DumbCleaner(Node) :
             self.publisher.publish(cmd_vel)
             rclpy.spin_once(self)
         
-        return CleanAction.Result()
+        return DumbCleanAction.Result()
     
 def main(args=None) :
     rclpy.init()

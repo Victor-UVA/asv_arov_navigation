@@ -3,14 +3,13 @@ import math
 import numpy as np
 from enum import Enum
 from rclpy.node import Node
-from rclpy.action import ActionServer
 from rclpy.action import ActionClient
 
-from asv_arov_interfaces.action import ControlModeAction, NavigationAction
+from asv_arov_interfaces.action import NavigationAction
 from robot_guidance_interfaces.action import NavigateAprilTags
-from asv_arov_interfaces.srv import SetPump
+from asv_arov_interfaces.srv import SetPump, ControlMode
 
-from geometry_msgs.msg import PoseStamped, PoseArray
+from geometry_msgs.msg import PoseArray
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -26,10 +25,10 @@ class ControlState(Enum) :
 class ControlActionServer(Node) :
 
     def __init__(self) :
-        super().__init__('control_action_server')
+        super().__init__('control_mode_service')
         self.cleaning_action_client = ActionClient(self, NavigateAprilTags, 'navigate_apriltags')
         self.navigation_action_client = ActionClient(self, NavigationAction, 'navigation_action')
-        self.action_server = ActionServer(self, ControlModeAction, 'control_action', execute_callback=self.execute_callback_async)
+        self.control_service = self.create_service(ControlMode, 'control_mode', self.service_callback)
         self.toggle_cleaners_client = self.create_client(SetPump, '/set_pump')
 
         self.declare_parameter('use_sim', False)
@@ -126,10 +125,10 @@ class ControlActionServer(Node) :
     def cleaning_result_callback(self, future) :
         self.cleaning_done = True
         
-    def execute_callback_async(self, goal_handle) :
-        mode_string = "STOP" if goal_handle.request.mode == 0 else "START" if goal_handle.request.mode == 1 else "HOME"
+    def service_callback(self, request, response) :
+        mode_string = "STOP" if request.mode == 0 else "START" if request.mode == 1 else "HOME"
         self.get_logger().info(f"Receiving task with mode {mode_string}")
-        if goal_handle.request.mode == 0 :
+        if request.mode == 0 :
             if self.timer is not None :
                 self.timer.destroy()
             if self.cleaning_goal_handle is not None :
@@ -137,9 +136,9 @@ class ControlActionServer(Node) :
             if self.nav_goal_handle is not None :
                 self.nav_goal_handle.cancel()
                 self.send_navigation_goal(None, 0)
-        elif goal_handle.request.mode == 1 :
+        elif request.mode == 1 :
             self.timer = self.create_timer(1, self.run_state_machine)
-        elif goal_handle.request.mode == 2 :
+        elif request.mode == 2 :
             if self.timer is not None :
                 self.timer.destroy()
             if self.cleaning_goal_handle is not None :
@@ -148,7 +147,7 @@ class ControlActionServer(Node) :
                 self.nav_goal_handle.cancel()
                 self.send_navigation_goal(None, 0)
             self.send_navigation_goal(self.asv_home_pose, 1)
-        return ControlModeAction.Result()
+        return response
 
     def publish_poses(self, pose_list) :
         msg = PoseArray()

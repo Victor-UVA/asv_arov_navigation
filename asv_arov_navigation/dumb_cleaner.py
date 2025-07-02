@@ -59,14 +59,18 @@ class DumbCleaner(Node) :
         end_contours = None
         cv2.findContours(bar_mask, bar_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.findContours(end_mask, end_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if bar_contours :
+            largest_bar_contour = max(bar_contours, cv2.contourArea)
+        if end_contours :
+            largest_end_contour = max(end_contours, cv2.contourArea)
         if end_contours and self.state == CleaningState.FOLLOWING_BAR :
             self.detecting_end = True
-            x,_,w,_ = cv2.boundingRect(end_contours[0])
+            x,_,w,_ = cv2.boundingRect(largest_end_contour)
             self.bar_width_error = self.strafing_bar_width - w
             self.bar_distance_from_center = len(frame[0]) / 2 - (x + w / 2)
         elif bar_contours :
             self.detecting_end = False
-            x,_,w,_ = cv2.boundingRect(bar_contours[0])
+            x,_,w,_ = cv2.boundingRect(largest_bar_contour)
             self.bar_width_error = self.cleaning_bar_width - w
             self.bar_distance_from_center = len(frame[0]) / 2 - (x + w / 2)
         else :

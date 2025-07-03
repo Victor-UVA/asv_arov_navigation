@@ -19,7 +19,7 @@ class DumbCleaner(Node) :
         super().__init__('dumb_cleaner')
 
         self.publisher = self.create_publisher(Twist, 'arov/cmd_vel')
-        self.camera_subscriber = self.create_subscription(Image, '/image_rect', self.camera_feed_callback, 10)
+        self.camera_subscriber = self.create_subscription(Image, 'arov/image_rect', self.camera_feed_callback, 10)
         self.action_server = ActionServer(self, DumbCleanAction, 'dumb_cleaner', self.execute_callback)
 
         self.COLORS = [[(), ()], [(), ()]]

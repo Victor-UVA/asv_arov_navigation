@@ -18,7 +18,7 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Twist
 from asv_arov_interfaces.srv import GetOdom
-from asv_arov_navigation.utils import build_transform_stamped, normalize
+from asv_arov_navigation.utils import build_transform_stamped, normalize_angle
 
 class PosePublisher(LifecycleNode):
     def __init__(self):
@@ -67,10 +67,10 @@ class PosePublisher(LifecycleNode):
         w = 1.8288
         theta = math.pi / 4
 
-        self.fence1_transform = [x1 + w * math.cos(-theta), y1 + w * math.sin(-theta), 0, 0, normalize(-math.pi / 2 + theta - math.pi), -math.pi / 2]
-        self.fence2_transform = [x1, y1, 0, 0, normalize(-math.pi / 2 - theta), -math.pi / 2]
-        self.fence3_transform = [x2 + w * math.cos(math.pi - theta), y2 + w * math.sin(math.pi - theta), 0, 0, normalize(-math.pi / 2 + theta), -math.pi / 2]
-        self.fence4_transform = [x2, y2, 0, 0, normalize(-math.pi / 2 + math.pi - theta), -math.pi / 2]
+        self.fence1_transform = [x1 + w * math.cos(-theta), y1 + w * math.sin(-theta), 0, 0, normalize_angle(-math.pi / 2 + theta - math.pi), -math.pi / 2]
+        self.fence2_transform = [x1, y1, 0, 0, normalize_angle(-math.pi / 2 - theta), -math.pi / 2]
+        self.fence3_transform = [x2 + w * math.cos(math.pi - theta), y2 + w * math.sin(math.pi - theta), 0, 0, normalize_angle(-math.pi / 2 + theta), -math.pi / 2]
+        self.fence4_transform = [x2, y2, 0, 0, normalize_angle(-math.pi / 2 + math.pi - theta), -math.pi / 2]
 
         self.cmd_vel = None
 

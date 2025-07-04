@@ -149,13 +149,6 @@ class ControlActionServer(Node) :
             self.send_navigation_goal(self.asv_home_pose, 1)
         return response
 
-    def publish_poses(self, pose_list) :
-        msg = PoseArray()
-        msg.header.frame_id = 'map'
-        pose_only_list = [p.pose for p in pose_list]
-        msg.poses = pose_only_list
-        self.pose_pub.publish(msg)
-
     def setup_routine_in_frame(self, frame_id) :
         out = []
         t = None

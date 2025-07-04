@@ -15,10 +15,11 @@ class ControlState(Enum) :
     EMPTYING = 2
 
 class PIDController() :
-    def __init__(self, kP, kI, kD, tolerance, dt) :
+    def __init__(self, kP, kI, kD, saturation, tolerance, dt) :
         self.kP = kP
         self.kI = kI
         self.kD = kD
+        self.saturation = saturation
         self.tolerance = tolerance
         self.dt = dt
         self.last_error = None
@@ -51,7 +52,7 @@ class PIDController() :
         self.integral_of_error += self.error * self.dt
         d_error = self.error - self.last_error if self.last_error is not None else 0
         self.last_error = self.error
-        return self.kP * self.error + self.kI * self.integral_of_error + self.kD * d_error
+        return max(min(self.kP * self.error + self.kI * self.integral_of_error + self.kD * d_error, self.saturation), -self.saturation)
 
     def is_done(self) :
         return self.tolerance > abs(self.error)
@@ -73,23 +74,28 @@ class Navigation0(Node) :
         self.asv_linear_kP = 0.5
         self.asv_linear_kI = 0
         self.asv_linear_kD = 0
+        self.asv_linear_saturation = 1
         self.asv_linear_tolerance = 0.1
         self.asv_yaw_kP = 0.5
         self.asv_yaw_kI = 0
         self.asv_yaw_kD = 0
+        self.asv_yaw_saturation = 1
         self.asv_yaw_tolerance = 0.1
         self.asv_follower_clearance = 1
         self.arov_linear_kP = 0.5
         self.arov_linear_kI = 0
         self.arov_linear_kD = 0
+        self.arov_linear_saturation = 1
         self.arov_linear_tolerance = 0.1
         self.arov_dive_kP = 0.5
         self.arov_dive_kI = 0
         self.arov_dive_kD = 0
+        self.arov_dive_saturation = 1
         self.arov_dive_tolerance = 0.1
         self.arov_yaw_kP = 0.5
         self.arov_yaw_kI = 0
         self.arov_yaw_kD = 0
+        self.arov_yaw_saturation = 1
         self.arov_yaw_tolerance = 0.1
         self.arov_follower_clearance = 1
         self.cleaning_routine_apriltag_x_offset = 0
@@ -106,13 +112,13 @@ class Navigation0(Node) :
         # Secondary Params
         self.arov_cmd_vel_publisher = self.create_publisher(Twist, self.arov_cmd_vel_topic, 1)
         self.asv_cmd_vel_publisher = self.create_publisher(Twist, self.asv_cmd_vel_topic, 1)
-        self.asv_x_controller = PIDController(self.asv_linear_kP, self.asv_linear_kI, self.asv_linear_kD, self.asv_linear_tolerance, self.dt)
-        self.asv_yaw_controller = PIDController(self.asv_yaw_kP, self.asv_yaw_kI, self.asv_yaw_kD, self.asv_yaw_tolerance, self.dt)
+        self.asv_x_controller = PIDController(self.asv_linear_kP, self.asv_linear_kI, self.asv_linear_kD, self.asv_linear_saturation, self.asv_linear_tolerance, self.dt)
+        self.asv_yaw_controller = PIDController(self.asv_yaw_kP, self.asv_yaw_kI, self.asv_yaw_kD, self.asv_yaw_saturation, self.asv_yaw_tolerance, self.dt)
         self.asv_yaw_controller.set_continuous(True, -math.pi, math.pi)
-        self.arov_x_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.arov_linear_tolerance, self.dt)
-        self.arov_y_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.arov_linear_tolerance, self.dt)
-        self.arov_z_controller = PIDController(self.arov_dive_kP, self.arov_dive_kI, self.arov_dive_kD, self.arov_dive_tolerance, self.dt)
-        self.arov_yaw_controller = PIDController(self.arov_yaw_kP, self.arov_yaw_kI, self.arov_yaw_kD, self.arov_yaw_tolerance, self.dt)
+        self.arov_x_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.arov_linear_saturation, self.arov_linear_tolerance, self.dt)
+        self.arov_y_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.arov_linear_saturation, self.arov_linear_tolerance, self.dt)
+        self.arov_z_controller = PIDController(self.arov_dive_kP, self.arov_dive_kI, self.arov_dive_kD, self.arov_dive_saturation, self.arov_dive_tolerance, self.dt)
+        self.arov_yaw_controller = PIDController(self.arov_yaw_kP, self.arov_yaw_kI, self.arov_yaw_kD, self.arov_yaw_saturation, self.arov_yaw_tolerance, self.dt)
         self.arov_yaw_controller.set_continuous(True, -math.pi, math.pi)
         self.fence_frame_cleaning_routine_poses = [build_pose([self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0])]
 

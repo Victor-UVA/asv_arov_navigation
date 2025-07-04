@@ -99,6 +99,7 @@ class Navigation0(Node) :
         self.cleaning_routine_width = 2
         self.cleaning_routine_strip_width = 0.5
         self.asv_pose_targets = [Pose()]
+        self.asv_pose_targets[0].position.x = 6.0
         self.arov_fence_frames = [["fence1", ""]]
         self.cleaning_cycles = 1
 
@@ -175,8 +176,8 @@ class Navigation0(Node) :
         d = math.sqrt(dx**2 + dy**2 + dz**2)
         if d == 0 :
             return self.arov_x, self.arov_y, self.arov_z
-        clear_d = self.arov_follower_clearance / d
-        return dx * clear_d, dy * clear_d, dz * clear_d
+        clear_d = (d - self.arov_follower_clearance) / d
+        return self.arov_x + dx * clear_d, self.arov_y + dy * clear_d, self.arov_z + dz * clear_d
     
     def asv_follower_pose(self) :
         dx = self.arov_x - self.asv_x
@@ -184,7 +185,7 @@ class Navigation0(Node) :
         d = math.sqrt(dx**2 + dy**2)
         if d == 0 :
             return self.asv_x, self.asv_y, self.asv_yaw
-        clear_d = self.asv_follower_clearance / d
+        clear_d = (d - self.asv_follower_clearance) / d
         dtheta = math.atan2(dy, dx)
         return dx * clear_d, dy * clear_d, dtheta
     

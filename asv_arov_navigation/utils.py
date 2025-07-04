@@ -6,10 +6,10 @@ import math
 
 def build_pose(pose, orientation=None) :
     pose_msg = Pose()
-    pose_msg.pose.position.x = float(pose[0])
-    pose_msg.pose.position.y = float(pose[1])
-    pose_msg.pose.position.z = float(pose[2])
-    pose_msg.pose.orientation = quaternion_from_euler(pose[3:6]) if orientation is None else orientation
+    pose_msg.position.x = float(pose[0])
+    pose_msg.position.y = float(pose[1])
+    pose_msg.position.z = float(pose[2])
+    pose_msg.orientation = quaternion_from_euler(pose[3:6]) if orientation is None else orientation
     return pose_msg
 
 def build_pose_stamped(time, frame_id, pose, orientation=None) :
@@ -136,4 +136,4 @@ def normalize_angle(theta) :
     return normalize(theta, -math.pi, math.pi)
 
 def normalize(x, min, max) :
-    return (x + min) % (max - min) - min
+    return (x - min) % (max - min) + min

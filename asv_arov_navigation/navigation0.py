@@ -23,11 +23,12 @@ class PIDController() :
         self.dt = dt
         self.last_error = None
         self.integral_of_error = 0
-        self.target = None
-        self.done = False
+        self.target = 0
+        self.done = True
         self.continuous = False
         self.min = 0
         self.max = 0
+        self.error = 0
 
     def set_continuous(self, continuous, min, max) :
         self.min = min
@@ -44,21 +45,16 @@ class PIDController() :
         return self.target
     
     def calculate(self, pose) :
-        error = self.target - pose
+        self.error = self.target - pose
         if self.continuous :
-            error = normalize(error, self.min, self.max)
-        self.integral_of_error += error * self.dt
-        d_error = error - self.last_error if self.last_error is not None else 0
-        self.last_error = error
-        if self.tolerance < abs(error) :
-            self.done = False
-            return self.kP * error + self.kI * self.integral_of_error + self.kD * d_error
-        else :
-            self.done = True
-            return 0
-    
+            self.error = normalize(self.error, self.min, self.max)
+        self.integral_of_error += self.error * self.dt
+        d_error = self.error - self.last_error if self.last_error is not None else 0
+        self.last_error = self.error
+        return self.kP * self.error + self.kI * self.integral_of_error + self.kD * d_error
+
     def is_done(self) :
-        return self.done
+        return self.tolerance > abs(self.error)
 
 class Navigation0(Node) :
     def __init__(self) :
@@ -109,21 +105,21 @@ class Navigation0(Node) :
         # Secondary Params
         self.arov_cmd_vel_publisher = self.create_publisher(Twist, self.arov_cmd_vel_topic, 1)
         self.asv_cmd_vel_publisher = self.create_publisher(Twist, self.asv_cmd_vel_topic, 1)
-        self.asv_x_controller = PIDController(self.asv_linear_kP, self.asv_linear_kI, self.asv_linear_kD, self.dt)
-        self.asv_yaw_controller = PIDController(self.asv_yaw_kP, self.asv_yaw_kI, self.asv_yaw_kD, self.dt)
+        self.asv_x_controller = PIDController(self.asv_linear_kP, self.asv_linear_kI, self.asv_linear_kD, self.asv_linear_tolerance, self.dt)
+        self.asv_yaw_controller = PIDController(self.asv_yaw_kP, self.asv_yaw_kI, self.asv_yaw_kD, self.asv_yaw_tolerance, self.dt)
         self.asv_yaw_controller.set_continuous(True, -math.pi, math.pi)
-        self.arov_x_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.dt)
-        self.arov_y_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.dt)
-        self.arov_z_controller = PIDController(self.arov_dive_kP, self.arov_dive_kI, self.arov_dive_kD, self.dt)
-        self.arov_yaw_controller = PIDController(self.arov_yaw_kP, self.arov_yaw_kI, self.arov_yaw_kD, self.dt)
+        self.arov_x_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.arov_linear_tolerance, self.dt)
+        self.arov_y_controller = PIDController(self.arov_linear_kP, self.arov_linear_kI, self.arov_linear_kD, self.arov_linear_tolerance, self.dt)
+        self.arov_z_controller = PIDController(self.arov_dive_kP, self.arov_dive_kI, self.arov_dive_kD, self.arov_dive_tolerance, self.dt)
+        self.arov_yaw_controller = PIDController(self.arov_yaw_kP, self.arov_yaw_kI, self.arov_yaw_kD, self.arov_yaw_tolerance, self.dt)
         self.arov_yaw_controller.set_continuous(True, -math.pi, math.pi)
         self.fence_frame_cleaning_routine_poses = [build_pose([self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0])]
 
         for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].position
             strip_depth = self.cleaning_routine_depth if previous_pos.y == 0 else 0
-            self.fence_frame_cleaning_routine_poses.append(build_pose([previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, math.pi/2, math.pi/2, 0]))
-            self.fence_frame_cleaning_routine_poses.append(build_pose([previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, math.pi/2, math.pi/2, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose([previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
+            self.fence_frame_cleaning_routine_poses.append(build_pose([previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
 
         # Instance Objects
         self.pose_pub = self.create_publisher(PoseArray, "pose_array", 10)
@@ -165,6 +161,8 @@ class Navigation0(Node) :
         return self.asv_x_controller.is_done() and self.asv_yaw_controller.is_done()
     
     def arov_done(self) :
+        #self.get_logger().info(f"{self.arov_x_controller.is_done()} {self.arov_y_controller.is_done()} {self.arov_z_controller.is_done()} {self.arov_yaw_controller.is_done()}")
+        #self.get_logger().info(f"{self.arov_x_controller.error} {self.arov_y_controller.error} {self.arov_z_controller.error} {self.arov_yaw_controller.error}")
         return self.arov_x_controller.is_done() and self.arov_y_controller.is_done() and self.arov_z_controller.is_done() and self.arov_yaw_controller.is_done()
 
     def get_asv_linear_distance(self, target) :
@@ -175,6 +173,8 @@ class Navigation0(Node) :
         dy = self.asv_y - self.arov_y
         dz = self.surface_z - self.arov_z
         d = math.sqrt(dx**2 + dy**2 + dz**2)
+        if d == 0 :
+            return self.arov_x, self.arov_y, self.arov_z
         clear_d = self.arov_follower_clearance / d
         return dx * clear_d, dy * clear_d, dz * clear_d
     
@@ -182,6 +182,8 @@ class Navigation0(Node) :
         dx = self.arov_x - self.asv_x
         dy = self.arov_y - self.asv_y
         d = math.sqrt(dx**2 + dy**2)
+        if d == 0 :
+            return self.asv_x, self.asv_y, self.asv_yaw
         clear_d = self.asv_follower_clearance / d
         dtheta = math.atan2(dy, dx)
         return dx * clear_d, dy * clear_d, dtheta
@@ -210,8 +212,7 @@ class Navigation0(Node) :
     def publish_poses(self, pose_list) :
         msg = PoseArray()
         msg.header.frame_id = 'map'
-        pose_only_list = [p.pose for p in pose_list]
-        msg.poses = pose_only_list
+        msg.poses = pose_list
         self.pose_pub.publish(msg)
 
     def setup_routine_in_frame(self, frame_id) :
@@ -226,9 +227,8 @@ class Navigation0(Node) :
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AprilTag transform: {ex}')
         for i in self.fence_frame_cleaning_routine_poses :
-            #self.get_logger().info(f'Pose in AprilTag frame: {i.pose.position} \n Orientation in AprilTag frame: {i.pose.orientation} \n Translation from {frame_id}: {t.transform.translation} \n Rotation from {frame_id}: {t.transform.rotation}')
             out.append(transform_pose(i, t))
-            #self.get_logger().info(f'Pose in map frame: {out[-1].pose.position} \n Orientation in map frame: {out[-1].pose.orientation}')
+            #self.get_logger().info(f'Pose in map frame: {out[-1].position} \n Orientation in map frame: {out[-1].orientation}')
         self.publish_poses(out)
         return out
     
@@ -238,7 +238,7 @@ class Navigation0(Node) :
                 asv_t = self.tf_buffer.lookup_transform('map', self.asv_base_link, rclpy.time.Time())
                 self.asv_x = asv_t.transform.translation.x
                 self.asv_y = asv_t.transform.translation.y
-                self.asv_yaw = euler_from_quaternion(asv_t.transform.orientation)[2]
+                self.asv_yaw = euler_from_quaternion(asv_t.transform.rotation)[2]
             except TransformException as ex :
                 self.get_logger().info(f'Could not get ASV pose: {ex}')
                 continue
@@ -247,7 +247,7 @@ class Navigation0(Node) :
                 self.arov_x = arov_t.transform.translation.x
                 self.arov_y = arov_t.transform.translation.y
                 self.arov_z = arov_t.transform.translation.z
-                self.arov_yaw = euler_from_quaternion(arov_t.transform.orientation)[2]
+                self.arov_yaw = euler_from_quaternion(arov_t.transform.rotation)[2]
                 break
             except TransformException as ex :
                 self.get_logger().info(f'Could not get AROV pose: {ex}')
@@ -261,7 +261,7 @@ class Navigation0(Node) :
             self.asv_x_controller.set_target(asv_target_distance)
             self.set_asv_linear_target = False
         if self.set_asv_angular_target :
-            self.asv_yaw_controller.set_target(asv_target_yaw)
+            self.asv_yaw_controller.set_target(normalize_angle(asv_target_yaw))
             self.set_asv_angular_target = False
         asv_twist.angular.z = self.asv_yaw_controller.calculate(self.asv_yaw)
         if self.asv_yaw_controller.is_done() :
@@ -293,7 +293,7 @@ class Navigation0(Node) :
             asv_target_x, asv_target_y, asv_target_theta = self.asv_follower_pose()
             asv_target_distance, asv_target_yaw = self.optimized_asv_target(build_pose([asv_target_x, asv_target_y, 0, 0, 0, asv_target_theta]))
             self.asv_x_controller.set_target(asv_target_distance)
-            self.asv_yaw_controller.set_target(asv_target_yaw)
+            self.asv_yaw_controller.set_target(normalize_angle(asv_target_yaw))
             asv_twist.angular.z = self.asv_yaw_controller.calculate(self.asv_yaw)
             if self.asv_yaw_controller.is_done() :
                 asv_twist.linear.x = self.asv_x_controller.calculate(self.asv_x_controller.get_target() - asv_target_distance)
@@ -306,7 +306,7 @@ class Navigation0(Node) :
                 self.asv_x_controller.set_target(asv_target_distance)
                 self.set_asv_linear_target = False
             if self.set_asv_angular_target :
-                self.asv_yaw_controller.set_target(asv_target_yaw)
+                self.asv_yaw_controller.set_target(normalize_angle(asv_target_yaw))
                 self.set_asv_angular_target = False
             asv_twist.angular.z = self.asv_yaw_controller.calculate(self.asv_yaw)
             if self.asv_yaw_controller.is_done() :
@@ -333,9 +333,10 @@ class Navigation0(Node) :
                     self.arov_yaw_controller.set_target(euler_from_quaternion(self.transformed_fence_poses[self.arov_fence_switch][self.arov_routine_pose_id].orientation)[2])
                     self.set_arov_target = False
                     self.toggle_cleaners(True)
+                #self.get_logger().info(f"{self.transformed_fence_poses[self.arov_fence_switch][self.arov_routine_pose_id]}")
                 arov_twist.linear.x = self.arov_x_controller.calculate(self.arov_x)
-                arov_twist.linear.y = self.arov_x_controller.calculate(self.arov_y)
-                arov_twist.linear.z = self.arov_x_controller.calculate(self.arov_z)
+                arov_twist.linear.y = self.arov_y_controller.calculate(self.arov_y)
+                arov_twist.linear.z = self.arov_z_controller.calculate(self.arov_z)
                 arov_twist.angular.z = self.arov_yaw_controller.calculate(self.arov_yaw)
                 if self.arov_done() :
                     self.toggle_cleaners(False)

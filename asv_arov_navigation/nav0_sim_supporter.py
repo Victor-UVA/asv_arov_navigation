@@ -20,15 +20,15 @@ class Nav0SimSupporter(Node) :
         self.tf_broadcaster = TransformBroadcaster(self)
 
         if self.use_sim :
-            self.asv_cmd_vel_subscriber = self.create_subscription(Twist, 'asv/cmd_vel', self.asv_cmd_vel_callback)
-            self.arov_cmd_vel_subscriber = self.create_subscription(Twist, 'arov/cmd_vel', self.arov_cmd_vel_callback)
+            self.asv_cmd_vel_subscriber = self.create_subscription(Twist, 'asv/cmd_vel', self.asv_cmd_vel_callback, 1)
+            self.arov_cmd_vel_subscriber = self.create_subscription(Twist, 'arov/cmd_vel', self.arov_cmd_vel_callback, 1)
             self.asv_pose = Pose()
             self.arov_pose = Pose()
 
         self.asv_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'asv/amcl_pose', 10)
         self.arov_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'arov/amcl_pose', 10)
 
-        self.fence1 = build_transform_stamped(self.get_clock().now(), "map", "fence1", [0, 0, 0, -math.pi/2, -math.pi/2, 0])
+        self.fence1 = build_transform_stamped(self.get_clock().now(), "map", "fence1", [0, 0, 0, 0, math.pi/2, -math.pi/2])
 
         self.create_timer(self.dt, self.timer_callback)
 
@@ -36,7 +36,7 @@ class Nav0SimSupporter(Node) :
         rpy = euler_from_quaternion(self.asv_pose.orientation)
         self.asv_pose.position.x += data.linear.x * math.cos(rpy[2]) * self.dt
         self.asv_pose.position.y += data.linear.x * math.sin(rpy[2]) * self.dt
-        self.asv_pose.position.z = self.surface_z
+        self.asv_pose.position.z = float(self.surface_z)
         self.asv_pose.orientation = quaternion_from_euler([rpy[0], rpy[1], rpy[2] + data.angular.z * self.dt])
 
     def arov_cmd_vel_callback(self, data) :
@@ -71,4 +71,12 @@ class Nav0SimSupporter(Node) :
             arov_pwcs.pose.pose = self.arov_pose
 
             self.asv_pose_publisher.publish(asv_pwcs)
-            self.arov_pose_publisher.publish(asv_pwcs)
+            self.arov_pose_publisher.publish(arov_pwcs)
+
+def main(args=None) :
+    rclpy.init()
+    node = Nav0SimSupporter()
+    rclpy.spin(node)
+
+if __name__ == '__main__' :
+    main()

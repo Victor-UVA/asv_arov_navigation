@@ -69,6 +69,7 @@ class Navigation0(Node) :
         self.arov_base_link = "arov/base_link"
         self.asv_base_link = "asv/base_link"
         self.asv_home = Pose()
+        self.asv_home.position.y = 2.0
         self.arov_mort_trap_pose = Pose()
         self.surface_z = 0
         self.arov_follow_z = -1
@@ -140,8 +141,6 @@ class Navigation0(Node) :
         self.timer = None
 
         # Instance Variables
-        self.asv_goal = None
-        self.arov_goal = None
         self.state = ControlState.NAVIGATING
         self.asv_pose_id = 0
         self.arov_routine_pose_id = 0
@@ -153,6 +152,17 @@ class Navigation0(Node) :
         self.arov_y = 0
         self.arov_z = 0
         self.arov_yaw = 0
+        self.set_asv_angular_target = True
+        self.set_asv_linear_target = True
+        self.set_arov_target = True
+        self.transformed_fence_poses = []
+        self.cleaning_cycles_completed = 0
+
+    def reset_instance_variables(self) :
+        self.state = ControlState.NAVIGATING
+        self.asv_pose_id = 0
+        self.arov_routine_pose_id = 0
+        self.arov_fence_switch = 0
         self.set_asv_angular_target = True
         self.set_asv_linear_target = True
         self.set_arov_target = True
@@ -383,6 +393,7 @@ class Navigation0(Node) :
     def service_callback(self, request, response) :
         mode_string = "HOME" if request.mode == 2 else "START" if request.mode == 1 else "STOP"
         self.get_logger().info(f"Receiving task with mode {mode_string}")
+        self.reset_instance_variables()
         if self.timer is not None :
             self.timer.destroy()
         self.stop()

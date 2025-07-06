@@ -32,6 +32,6 @@ def generate_launch_description() :
         Node(
             package='asv_arov_navigation',
             executable='movement_servers',
-            parameters=[{'odom_topic', 'arov/odom'}]
+            parameters=[{'odom_topic': 'arov/odom'}]
         )
     ])

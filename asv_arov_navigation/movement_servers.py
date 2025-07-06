@@ -20,8 +20,8 @@ class MovementServerManager(Node) :
         self.declare_parameter('use_sim', False)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
 
-        self.asv_nav = BasicNavigator(namespace="asv")
-        self.asv_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
+        # self.asv_nav = BasicNavigator(namespace="asv")
+        # self.asv_nav.waitUntilNav2Active(localizer="/asv/pose_publisher")
         self.arov_nav = arov_navigator
 
         self.follow_distance = 1.0

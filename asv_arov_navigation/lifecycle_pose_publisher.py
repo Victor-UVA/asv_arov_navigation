@@ -195,7 +195,7 @@ class PosePublisher(LifecycleNode):
                 0, 0, 0, 0, 0, 0.1
             ]
             self.pose_pub.publish(pose)
-        else :
+        elif self.get_namespace().strip("/") == "arov" :
             t = None
             try :
                 t = self.tf_buffer.lookup_transform(self.get_namespace().strip('/') + '/base_link', 'map', rclpy.time.Time()) # self.get_clock().now()

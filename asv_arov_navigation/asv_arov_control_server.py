@@ -32,12 +32,12 @@ class ControlActionServer(Node) :
         self.toggle_cleaners_client = self.create_client(SetPump, '/set_pump')
 
         self.declare_parameter('use_sim', False)
-        self.declare_parameter('cleaning_routine_depth', 0.0)
-        self.declare_parameter('cleaning_routine_width', 0.0)
-        self.declare_parameter('cleaning_routine_strip_width', 0.0)
+        self.declare_parameter('cleaning_routine_depth', -0.5)
+        self.declare_parameter('cleaning_routine_width', 1.8288)
+        self.declare_parameter('cleaning_routine_strip_width', 0.3048)
         self.declare_parameter('cleaning_routine_apriltag_x_offset', 0.0)
         self.declare_parameter('cleaning_routine_apriltag_y_offset', 0.0)
-        self.declare_parameter('cleaning_routine_apriltag_clearance', 0.0)
+        self.declare_parameter('cleaning_routine_apriltag_clearance', 1.0)
         self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
         self.cleaning_routine_depth: float = self.get_parameter('cleaning_routine_depth').get_parameter_value().double_value
         self.cleaning_routine_width: float = self.get_parameter('cleaning_routine_width').get_parameter_value().double_value
@@ -54,7 +54,7 @@ class ControlActionServer(Node) :
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.asv_target_poses = [build_pose_stamped(self.get_clock().now(), "map", [-2, 3, 0, 0, 0, 0]), build_pose_stamped(self.get_clock().now(), "map", [-2, 3, 0, 0, 0, 0])]
-        self.arov_fence_frame_pairs = [['tag36h11:20', ""], ['', '']]#[["tag36h11:19", "tag36h11:20"], ["", ""]]
+        self.arov_fence_frame_pairs = [['tag36h11:19_true', ""], ['', '']]#[["tag36h11:19", "tag36h11:20"], ["", ""]]
         self.arov_fence_switch = 0
         self.asv_target_pose_id = 1
         self.asv_home_pose = None
@@ -132,9 +132,9 @@ class ControlActionServer(Node) :
             if self.timer is not None :
                 self.timer.destroy()
             if self.cleaning_goal_handle is not None :
-                self.cleaning_goal_handle.cancel()
+                self.cleaning_goal_handle.cancel_goal()
             if self.nav_goal_handle is not None :
-                self.nav_goal_handle.cancel()
+                self.nav_goal_handle.cancel_goal()
                 self.send_navigation_goal(None, 0)
         elif request.mode == 1 :
             self.timer = self.create_timer(1, self.run_state_machine)
@@ -142,9 +142,9 @@ class ControlActionServer(Node) :
             if self.timer is not None :
                 self.timer.destroy()
             if self.cleaning_goal_handle is not None :
-                self.cleaning_goal_handle.cancel()
+                self.cleaning_goal_handle.cancel_goal()
             if self.nav_goal_handle is not None :
-                self.nav_goal_handle.cancel()
+                self.nav_goal_handle.cancel_goal()
                 self.send_navigation_goal(None, 0)
             self.send_navigation_goal(self.asv_home_pose, 1)
         return response
@@ -167,15 +167,15 @@ class ControlActionServer(Node) :
     
     def run_state_machine(self) :
         if self.state == ControlState.STARTING :
-            if self.asv_home_pose is None :
-                t = None
-                try :
-                    t = self.tf_buffer.lookup_transform('map', 'asv/base_link', rclpy.time.Time())
-                except TransformException as ex :
-                    self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
-                if t is not None :
-                    self.asv_home_pose = build_pose_stamped(self.get_clock().now(), "map", [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z], t.transform.rotation)
-            else :
+            #if self.asv_home_pose is None :
+            #    t = None
+            #    try :
+            #        t = self.tf_buffer.lookup_transform('map', 'asv/base_link', rclpy.time.Time())
+            #    except TransformException as ex :
+            #        self.get_logger().info(f'Could not get ASV pose as transform: {ex}')
+            #    if t is not None :
+            #        self.asv_home_pose = build_pose_stamped(self.get_clock().now(), "map", [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z], t.transform.rotation)
+            #else :
                 self.state = ControlState.NAVIGATING
         elif self.state == ControlState.CLEANING :
             if not self.cleaning_check :

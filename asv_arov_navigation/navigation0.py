@@ -159,11 +159,10 @@ class Navigation0(Node) :
         self.transformed_fence_poses = []
         self.cleaning_cycles_completed = 0
 
-    def arov_go_to_target(self, twist) :
+    def arov_go_to_target_position(self, twist) :
         twist.linear.x = self.arov_x_controller.calculate(self.arov_x)
         twist.linear.y = self.arov_y_controller.calculate(self.arov_y)
         twist.linear.z = self.arov_z_controller.calculate(self.arov_z)
-        twist.angular.z = self.arov_yaw_controller.calculate(self.arov_yaw)
 
     def toggle_cleaners(self, active) :
         self.get_logger().info("Activating cleaner pump" if active else "Deactivating cleaner pump")
@@ -291,7 +290,7 @@ class Navigation0(Node) :
         self.arov_x_controller.set_target(arov_target_x)
         self.arov_y_controller.set_target(arov_target_y)
         self.arov_z_controller.set_target(arov_target_z)
-        self.arov_go_to_target(arov_twist)
+        self.arov_go_to_target_position(arov_twist)
         if self.asv_done() and self.arov_done() :
             self.set_asv_angular_target = True
             self.set_asv_linear_target = True
@@ -310,7 +309,8 @@ class Navigation0(Node) :
                 self.arov_z_controller.set_target(self.arov_mort_trap_pose.position.z)
                 self.arov_yaw_controller.set_target(euler_from_quaternion(self.arov_mort_trap_pose.orientation)[2])
                 self.set_arov_target = False
-            self.arov_go_to_target(arov_twist)
+            self.arov_go_to_target_position(arov_twist)
+            arov_twist.angular.z = self.arov_yaw_controller.calculate(self.arov_yaw)
             asv_target_x, asv_target_y, asv_target_theta = self.asv_follower_pose()
             asv_target_distance, asv_target_yaw = self.optimized_asv_target(build_pose([asv_target_x, asv_target_y, 0, 0, 0, asv_target_theta]))
             self.asv_x_controller.set_target(asv_target_distance)
@@ -338,7 +338,7 @@ class Navigation0(Node) :
                 self.arov_x_controller.set_target(arov_target_x)
                 self.arov_y_controller.set_target(arov_target_y)
                 self.arov_z_controller.set_target(arov_target_z)
-                self.arov_go_to_target(arov_twist)
+                self.arov_go_to_target_position(arov_twist)
                 if self.asv_done() and self.arov_done() :
                     self.state = ControlState.CLEANING
                     self.transformed_fence_poses = []
@@ -357,7 +357,8 @@ class Navigation0(Node) :
                     self.set_arov_target = False
                     self.toggle_cleaners(True)
                 #self.get_logger().info(f"{self.transformed_fence_poses[self.arov_fence_switch][self.arov_routine_pose_id]}")
-                self.arov_go_to_target(arov_twist)
+                self.arov_go_to_target_position(arov_twist)
+                arov_twist.angular.z = self.arov_yaw_controller.calculate(self.arov_yaw)
                 if self.arov_done() :
                     self.toggle_cleaners(False)
                     self.set_arov_target = True

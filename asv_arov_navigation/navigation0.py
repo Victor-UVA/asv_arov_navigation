@@ -296,6 +296,8 @@ class Navigation0(Node) :
             self.set_asv_linear_target = True
             self.stop()
             self.timer.destroy()
+        self.asv_cmd_vel_publisher.publish(asv_twist)
+        self.arov_cmd_vel_publisher.publish(self.global_to_relative_arov_command(arov_twist))
 
     def run_state_machine(self) :
         self.get_logger().info(f"{self.state}")

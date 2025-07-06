@@ -71,7 +71,6 @@ class Navigation0(Node) :
         self.asv_home = Pose()
         self.asv_home.position.y = 2.0
         self.arov_mort_trap_pose = Pose()
-        self.surface_z = 0
         self.arov_follow_z = -1
         self.asv_linear_kP = 0.5
         self.asv_linear_kI = 0
@@ -200,12 +199,11 @@ class Navigation0(Node) :
     def arov_follower_pose(self) :
         dx = self.asv_x - self.arov_x
         dy = self.asv_y - self.arov_y
-        #dz = self.surface_z - self.arov_z
-        d = math.sqrt(dx**2 + dy**2) # + dz**2)
+        d = math.sqrt(dx**2 + dy**2)
         if d == 0 :
             return self.arov_x, self.arov_y, self.arov_follow_z
         clear_d = (d - self.arov_follower_clearance) / d
-        return self.arov_x + dx * clear_d, self.arov_y + dy * clear_d, self.arov_follow_z #self.arov_z + dz * clear_d
+        return self.arov_x + dx * clear_d, self.arov_y + dy * clear_d, self.arov_follow_z
     
     def asv_follower_pose(self) :
         dx = self.arov_x - self.asv_x

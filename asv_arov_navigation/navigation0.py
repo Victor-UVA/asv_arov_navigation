@@ -61,8 +61,10 @@ class Navigation0(Node) :
     def __init__(self) :
         super().__init__('nav0')
 
+        self.declare_parameter('use_sim', False)
+
         # Primary Params
-        self.use_sim = True
+        self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
         self.dt = 0.1
         self.arov_cmd_vel_topic = "arov/cmd_vel"
         self.asv_cmd_vel_topic = "asv/cmd_vel"

@@ -11,7 +11,9 @@ class Nav0SimSupporter(Node) :
     def __init__(self) :
         super().__init__('nav0_sim_supporter')
 
-        self.use_sim = True
+        self.declare_parameter('use_sim', False)
+
+        self.use_sim: bool = self.get_parameter('use_sim').get_parameter_value().bool_value
         self.surface_z = 0
         self.dt = 0.1
 

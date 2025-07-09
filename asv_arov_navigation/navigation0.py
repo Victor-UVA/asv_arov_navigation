@@ -69,49 +69,55 @@ class Navigation0(Node) :
         self.arov_base_link = "arov/base_link"
         self.asv_base_link = "asv/base_link"
         self.asv_home = Pose()
-        self.asv_home.position.y = 2.0
+        self.asv_home.position.x = 6.0
+        self.asv_home.position.y = 3.0
         self.arov_mort_trap_pose = Pose()
-        self.arov_follow_z = -1
-        self.asv_linear_kP = 0.5
+        self.arov_follow_z = -1.5
+        self.asv_linear_kP = 0.3
         self.asv_linear_kI = 0
         self.asv_linear_kD = 0
-        self.asv_linear_saturation = 1.0
+        self.asv_linear_saturation = 0.3
         self.asv_linear_tolerance = 0.3
-        self.asv_yaw_kP = 0.5
+        self.asv_yaw_kP = 0.7
         self.asv_yaw_kI = 0
         self.asv_yaw_kD = 0
-        self.asv_yaw_saturation = 1.0
+        self.asv_yaw_saturation = 0.5
         self.asv_yaw_tolerance = 0.1
         self.asv_follower_clearance = 1
-        self.arov_linear_kP = 0.5
-        self.arov_linear_kI = 0
-        self.arov_linear_kD = 0
-        self.arov_linear_saturation = 1.0
-        self.arov_linear_tolerance = 0.1
-        self.arov_dive_kP = 0.5
-        self.arov_dive_kI = 0
-        self.arov_dive_kD = 0
-        self.arov_dive_saturation = 1.0
-        self.arov_dive_tolerance = 0.1
-        self.arov_yaw_kP = 0.5
+        self.arov_linear_kP = 0.3
+        self.arov_linear_kI = 0.0
+        self.arov_linear_kD = 0.1
+        self.arov_linear_saturation = 0.07
+        self.arov_linear_tolerance = 0.2
+        self.arov_dive_kP = 0.2
+        self.arov_dive_kI = 0.01
+        self.arov_dive_kD = 0.8
+        self.arov_dive_saturation = 0.04
+        self.arov_dive_tolerance = 0.3
+        self.arov_yaw_kP = 0.25
         self.arov_yaw_kI = 0
-        self.arov_yaw_kD = 0
-        self.arov_yaw_saturation = 1.0
-        self.arov_yaw_tolerance = 0.1
+        self.arov_yaw_kD = 0.3
+        self.arov_yaw_saturation = 0.25
+        self.arov_yaw_tolerance = 0.26
         self.arov_follower_clearance = 1
         self.arov_move_then_turn = False
         self.cleaning_routine_apriltag_x_offset = 0
         self.cleaning_routine_apriltag_y_offset = 0
-        self.cleaning_routine_apriltag_clearance = 0
-        self.cleaning_routine_depth = -1
-        self.cleaning_routine_width = 2
+        self.cleaning_routine_apriltag_clearance = 0.75
+        self.cleaning_routine_depth = -0.5
+        self.cleaning_routine_width = 1
         self.cleaning_routine_strip_width = 0.5
         self.asv_pose_targets = [Pose(), Pose()]
-        self.asv_pose_targets[0].position.x = 3.0
-        self.asv_pose_targets[1].position.x = -3.0
-        self.asv_pose_targets[1].position.y = 1.0
-        self.arov_fence_frames = [["", ""], ["", ""]]
-        self.cleaning_cycles = 2
+        self.asv_pose_targets[0].position.x = 4.0
+        self.asv_pose_targets[0].position.y = 2.5
+        self.asv_pose_targets[0].position.z = self.arov_follow_z
+        self.asv_pose_targets[1].position.x = 6.0
+        self.asv_pose_targets[1].position.y = 2.5
+        self.asv_pose_targets[1].position.z = self.arov_follow_z
+        self.arov_fence_frames = [["tag36h11:17_true", ""], ["tag36h11:19_true", ""]]
+        self.cleaning_cycles = 6
+        self.run_arov = True
+        self.run_asv = False
 
         # Secondary Params
         self.arov_cmd_vel_publisher = self.create_publisher(Twist, self.arov_cmd_vel_topic, 1)
@@ -128,7 +134,7 @@ class Navigation0(Node) :
 
         for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].position
-            strip_depth = self.cleaning_routine_depth if previous_pos.y == 0 else 0
+            strip_depth = self.cleaning_routine_depth + self.cleaning_routine_apriltag_y_offset if previous_pos.y == self.cleaning_routine_apriltag_y_offset else self.cleaning_routine_apriltag_y_offset
             self.fence_frame_cleaning_routine_poses.append(build_pose([previous_pos.x, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
             self.fence_frame_cleaning_routine_poses.append(build_pose([previous_pos.x + self.cleaning_routine_strip_width, strip_depth, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0]))
 
@@ -176,22 +182,22 @@ class Navigation0(Node) :
 
     def toggle_cleaners(self, active) :
         self.get_logger().info("Activating cleaner pump" if active else "Deactivating cleaner pump")
-        if not self.use_sim :
+        if not self.use_sim and self.run_arov :
             request = SetPump.Request()
             request.set_pump = active
-            self.toggle_cleaners_client.wait_for_service()
-            self.toggle_cleaners_client.call_async(request)
+            self.pump_client.wait_for_service()
+            self.pump_client.call_async(request)
 
     def asv_done(self) :
         #self.get_logger().info(f"{self.asv_x_controller.is_done()} {self.asv_x_controller.error} {self.asv_yaw_controller.is_done()}")
-        return self.asv_x_controller.is_done() and self.asv_yaw_controller.is_done()
+        return not self.run_asv or (self.asv_x_controller.is_done() and self.asv_yaw_controller.is_done())
     
     def arov_move_done(self) :
-        return self.arov_x_controller.is_done() and self.arov_y_controller.is_done() and self.arov_z_controller.is_done()
+        return not self.run_arov or (self.arov_x_controller.is_done() and self.arov_y_controller.is_done() and self.arov_z_controller.is_done())
     
     def arov_done(self) :
         #self.get_logger().info(f"{self.arov_x_controller.is_done()} {self.arov_y_controller.is_done()} {self.arov_z_controller.is_done()} {self.arov_yaw_controller.is_done()}")
-        return self.arov_move_done() and self.arov_yaw_controller.is_done()
+        return not self.run_arov or (self.arov_move_done() and self.arov_yaw_controller.is_done())
 
     def get_asv_linear_distance(self, target) :
         return math.sqrt((target.position.x - self.asv_x)**2 + (target.position.y - self.asv_y)**2)
@@ -199,7 +205,7 @@ class Navigation0(Node) :
     def arov_follower_pose(self) :
         dx = self.asv_x - self.arov_x
         dy = self.asv_y - self.arov_y
-        d = math.sqrt(dx**2 + dy**2)
+        d = math.sqrt(dx**2 + dy**2) if self.run_asv else 0
         if d == 0 :
             return self.arov_x, self.arov_y, self.arov_follow_z
         clear_d = (d - self.arov_follower_clearance) / d
@@ -208,9 +214,9 @@ class Navigation0(Node) :
     def asv_follower_pose(self) :
         dx = self.arov_x - self.asv_x
         dy = self.arov_y - self.asv_y
-        d = math.sqrt(dx**2 + dy**2)
+        d = math.sqrt(dx**2 + dy**2) if self.run_arov else 0
         if d == 0 :
-            return 0, self.asv_yaw
+            return self.asv_x, self.asv_y, self.asv_yaw
         clear_d = (d - self.asv_follower_clearance) / d
         theta = math.atan2(dy, dx)
         return self.asv_x + dx * clear_d, self.asv_y + dy * clear_d, theta
@@ -240,6 +246,7 @@ class Navigation0(Node) :
     def stop(self) :
         self.asv_cmd_vel_publisher.publish(Twist())
         self.arov_cmd_vel_publisher.publish(Twist())
+        self.toggle_cleaners(False)
 
     def publish_poses(self, pose_list) :
         msg = PoseArray()
@@ -261,28 +268,30 @@ class Navigation0(Node) :
         for i in self.fence_frame_cleaning_routine_poses :
             out.append(transform_pose(i, t))
             #self.get_logger().info(f'Pose in map frame: {out[-1].position} \n Orientation in map frame: {out[-1].orientation}')
-        self.publish_poses(out)
         return out
     
     def get_poses(self) :
         while True :
-            try :
-                asv_t = self.tf_buffer.lookup_transform('map', self.asv_base_link, rclpy.time.Time())
-                self.asv_x = asv_t.transform.translation.x
-                self.asv_y = asv_t.transform.translation.y
-                self.asv_yaw = euler_from_quaternion(asv_t.transform.rotation)[2]
-            except TransformException as ex :
-                self.get_logger().warn(f'Could not get ASV pose: {ex}')
-                continue
-            try :
-                arov_t = self.tf_buffer.lookup_transform('map', self.arov_base_link, rclpy.time.Time())
-                self.arov_x = arov_t.transform.translation.x
-                self.arov_y = arov_t.transform.translation.y
-                self.arov_z = arov_t.transform.translation.z
-                self.arov_yaw = euler_from_quaternion(arov_t.transform.rotation)[2]
-                break
-            except TransformException as ex :
-                self.get_logger().warn(f'Could not get AROV pose: {ex}')
+            if self.run_asv :
+                try :
+                    asv_t = self.tf_buffer.lookup_transform('map', self.asv_base_link, rclpy.time.Time())
+                    self.asv_x = asv_t.transform.translation.x
+                    self.asv_y = asv_t.transform.translation.y
+                    self.asv_yaw = euler_from_quaternion(asv_t.transform.rotation)[2]
+                    if not self.run_arov :
+                        break
+                except TransformException as ex :
+                    self.get_logger().warn(f'Could not get ASV pose: {ex}')
+            if self.run_arov :
+                try :
+                    arov_t = self.tf_buffer.lookup_transform('map', self.arov_base_link, rclpy.time.Time())
+                    self.arov_x = arov_t.transform.translation.x
+                    self.arov_y = arov_t.transform.translation.y
+                    self.arov_z = arov_t.transform.translation.z
+                    self.arov_yaw = euler_from_quaternion(arov_t.transform.rotation)[2]
+                    break
+                except TransformException as ex :
+                    self.get_logger().warn(f'Could not get AROV pose: {ex}')
     
     def go_home(self) :
         self.get_poses()
@@ -303,13 +312,15 @@ class Navigation0(Node) :
         self.arov_y_controller.set_target(arov_target_y)
         self.arov_z_controller.set_target(arov_target_z)
         self.arov_go_to_target_position(arov_twist)
-        if self.asv_done() and self.arov_done() :
+        if self.asv_done() :
             self.set_asv_angular_target = True
             self.set_asv_linear_target = True
             self.stop()
             self.timer.destroy()
-        self.asv_cmd_vel_publisher.publish(asv_twist)
-        self.arov_cmd_vel_publisher.publish(self.global_to_relative_arov_command(arov_twist))
+        if self.run_asv :
+            self.asv_cmd_vel_publisher.publish(asv_twist)
+        if self.run_arov :
+            self.arov_cmd_vel_publisher.publish(self.global_to_relative_arov_command(arov_twist))
 
     def run_state_machine(self) :
         self.get_logger().info(f"{self.state}")
@@ -332,6 +343,7 @@ class Navigation0(Node) :
             self.asv_yaw_controller.set_target(normalize_angle(asv_target_yaw))
             asv_twist.angular.z = self.asv_yaw_controller.calculate(self.asv_yaw)
             if self.asv_yaw_controller.is_done() :
+                self.get_logger().info(f"{asv_target_distance}")
                 asv_twist.linear.x = self.asv_x_controller.calculate(self.asv_x_controller.get_target() - asv_target_distance)
             if self.arov_done() :
                 self.set_arov_target = True
@@ -349,18 +361,25 @@ class Navigation0(Node) :
             if self.asv_yaw_controller.is_done() :
                 asv_twist.linear.x = self.asv_x_controller.calculate(self.asv_x_controller.get_target() - asv_target_distance)
             if self.state == ControlState.NAVIGATING :
-                arov_target_x, arov_target_y, arov_target_z = self.arov_follower_pose()
-                self.arov_x_controller.set_target(arov_target_x)
-                self.arov_y_controller.set_target(arov_target_y)
-                self.arov_z_controller.set_target(arov_target_z)
+                #arov_target_x, arov_target_y, arov_target_z = self.arov_follower_pose()
+                if self.set_arov_target :
+                    self.arov_x_controller.set_target(self.asv_pose_targets[self.asv_pose_id].position.x)
+                    self.arov_y_controller.set_target(self.asv_pose_targets[self.asv_pose_id].position.y)
+                    self.arov_z_controller.set_target(self.asv_pose_targets[self.asv_pose_id].position.z)
+                    self.arov_yaw_controller.set_target(euler_from_quaternion(self.asv_pose_targets[self.asv_pose_id].orientation)[2])
+                    self.set_arov_target = False
                 self.arov_go_to_target_position(arov_twist)
-                if self.asv_done() and self.arov_done() :
+                arov_twist.angular.z = self.arov_yaw_controller.calculate(self.arov_yaw)
+                if self.arov_done() :
                     self.state = ControlState.CLEANING
                     self.transformed_fence_poses = []
+                    #self.get_logger().info(f"{self.arov_fence_frames[self.asv_pose_id][0]} {self.arov_fence_frames[self.asv_pose_id][1]}")
                     self.transformed_fence_poses.append(self.setup_routine_in_frame(self.arov_fence_frames[self.asv_pose_id][0]))
                     self.transformed_fence_poses.append(self.setup_routine_in_frame(self.arov_fence_frames[self.asv_pose_id][1]))
+                    self.publish_poses(self.transformed_fence_poses[self.arov_fence_switch])
                     self.set_asv_angular_target = True
                     self.set_asv_linear_target = True
+                    self.set_arov_target = True
             elif self.state == ControlState.CLEANING :
                 if self.set_arov_target :
                     #self.get_logger().info("set arov target")
@@ -370,7 +389,10 @@ class Navigation0(Node) :
                     self.arov_z_controller.set_target(self.transformed_fence_poses[self.arov_fence_switch][self.arov_routine_pose_id].position.z)
                     self.arov_yaw_controller.set_target(euler_from_quaternion(self.transformed_fence_poses[self.arov_fence_switch][self.arov_routine_pose_id].orientation)[2])
                     self.set_arov_target = False
+                if self.arov_x_controller.is_done() and self.arov_y_controller.is_done() :
                     self.toggle_cleaners(True)
+                else :
+                    self.toggle_cleaners(False)
                 #self.get_logger().info(f"{self.transformed_fence_poses[self.arov_fence_switch][self.arov_routine_pose_id]}")
                 self.arov_go_to_target_position(arov_twist)
                 if not self.arov_move_then_turn or self.arov_move_done() :
@@ -390,9 +412,11 @@ class Navigation0(Node) :
                             self.state = ControlState.NAVIGATING if self.cleaning_cycles_completed < self.cleaning_cycles else ControlState.EMPTYING
                         else :
                             self.arov_fence_switch = 1
-
-        self.asv_cmd_vel_publisher.publish(asv_twist)
-        self.arov_cmd_vel_publisher.publish(self.global_to_relative_arov_command(arov_twist))
+                        self.publish_poses(self.transformed_fence_poses[self.arov_fence_switch])
+        if self.run_asv :
+            self.asv_cmd_vel_publisher.publish(asv_twist)
+        if self.run_arov :
+            self.arov_cmd_vel_publisher.publish(self.global_to_relative_arov_command(arov_twist))
     
     def service_callback(self, request, response) :
         mode_string = "HOME" if request.mode == 2 else "START" if request.mode == 1 else "STOP"

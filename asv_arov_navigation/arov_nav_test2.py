@@ -1,10 +1,6 @@
 import rclpy
-from rclpy.duration import Duration
-from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
-from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-from std_msgs.msg import Bool, Float32
-from ament_index_python.packages import get_package_share_directory
+from nav2_simple_commander.robot_navigator import BasicNavigator
 import os
 
 def main() -> None:

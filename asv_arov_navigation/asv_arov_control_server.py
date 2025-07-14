@@ -15,7 +15,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from asv_arov_navigation.utils import build_pose_stamped, euler_from_quaternion, quaternion_from_euler, transform_pose_stamped
+from asv_arov_navigation.utils import build_pose_stamped, transform_pose_stamped
 
 class ControlState(Enum) :
     STARTING = 0

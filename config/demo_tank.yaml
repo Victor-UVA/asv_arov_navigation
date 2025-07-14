@@ -1,7 +1,0 @@
-image: demo_tank.pgm
-mode: trinary     # white=open/black=obstacle/grey=unknown
-resolution: 0.01  # each pixel is 1cm
-origin: [-6.06, 0, 0]   # bottom left corner pos
-negate: 0
-occupied_thresh: 0.8
-free_thresh: 0.1

@@ -24,8 +24,9 @@ class Nav0SimSupporter(Node) :
         if self.use_sim :
             self.asv_cmd_vel_subscriber = self.create_subscription(Twist, 'asv/cmd_vel', self.asv_cmd_vel_callback, 1)
             self.arov_cmd_vel_subscriber = self.create_subscription(Twist, 'arov/cmd_vel', self.arov_cmd_vel_callback, 1)
-            self.asv_pose = Pose()
-            self.arov_pose = Pose()
+
+        self.asv_pose = Pose()
+        self.arov_pose = Pose()
 
         self.asv_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'asv/amcl_pose', 10)
         self.arov_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'arov/amcl_pose', 10)
@@ -63,23 +64,26 @@ class Nav0SimSupporter(Node) :
             self.tf_broadcaster.sendTransform(arov_tf)
             self.tf_broadcaster.sendTransform(self.fence1)
 
-        else :
-            asv_tf = self.tf_buffer.lookupTransform("map", "asv/base_link", rclpy.time.Time())
-            arov_tf = self.tf_buffer.lookupTransform("map", "arov/base_link", rclpy.time.Time())
-            self.asv_pose = build_pose([asv_tf.transform.translation.x, asv_tf.transform.translation.y, asv_tf.transform.translation.z], asv_tf.transform.rotation)
-            self.arov_pose = build_pose([arov_tf.transform.translation.x, arov_tf.transform.translation.y, arov_tf.transform.translation.z], arov_tf.transform.rotation)
+        #else :
+            #try :
+                #asv_tf = self.tf_buffer.lookup_transform("map", "asv/base_link", rclpy.time.Time())
+                #arov_tf = self.tf_buffer.lookup_transform("map", "arov/base_link", rclpy.time.Time())
+                #self.asv_pose = build_pose([asv_tf.transform.translation.x, asv_tf.transform.translation.y, asv_tf.transform.translation.z], asv_tf.transform.rotation)
+                #self.arov_pose = build_pose([arov_tf.transform.translation.x, arov_tf.transform.translation.y, arov_tf.transform.translation.z], arov_tf.transform.rotation)
+            #except TransformException as ex :
+            #    self.get_logger().warn("Failed to get transform for sim supporter.")
 
-        asv_pwcs = PoseWithCovarianceStamped()
-        asv_pwcs.header.stamp = self.get_clock().now().to_msg()
-        asv_pwcs.header.frame_id = "map"
-        asv_pwcs.pose.pose = self.asv_pose
-        arov_pwcs = PoseWithCovarianceStamped()
-        arov_pwcs.header.stamp = self.get_clock().now().to_msg()
-        arov_pwcs.header.frame_id = "map"
-        arov_pwcs.pose.pose = self.arov_pose
+        #asv_pwcs = PoseWithCovarianceStamped()
+        #asv_pwcs.header.stamp = self.get_clock().now().to_msg()
+        #asv_pwcs.header.frame_id = "map"
+        #asv_pwcs.pose.pose = self.asv_pose
+        #arov_pwcs = PoseWithCovarianceStamped()
+        #arov_pwcs.header.stamp = self.get_clock().now().to_msg()
+        #arov_pwcs.header.frame_id = "map"
+        #arov_pwcs.pose.pose = self.arov_pose
 
-        self.asv_pose_publisher.publish(asv_pwcs)
-        self.arov_pose_publisher.publish(arov_pwcs)
+        #self.asv_pose_publisher.publish(asv_pwcs)
+        #self.arov_pose_publisher.publish(arov_pwcs)
 
 def main(args=None) :
     rclpy.init()

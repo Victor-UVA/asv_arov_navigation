@@ -1,5 +1,5 @@
 # asv_arov_navigation
-To launch the navigation code:
+To launch the navigation service:
 ```
 ros2 launch asv_arov_navigation nav0_launch.py use_sim:=true
 ```

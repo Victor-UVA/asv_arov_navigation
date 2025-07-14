@@ -168,7 +168,7 @@ class Navigation0(Node) :
         self.arov_yaw_controller.set_continuous(True, -math.pi, math.pi)
         self.fence_frame_cleaning_routine_poses = [build_pose([self.cleaning_routine_apriltag_x_offset, self.cleaning_routine_apriltag_y_offset, self.cleaning_routine_apriltag_clearance, 0, math.pi/2, 0])]
 
-        # Construct cleaning routine in AprilTag frame (-z, -x, y)
+        # Construct cleaning routine in AprilTag frame (z, -x, y)
         for i in range(0, math.ceil(self.cleaning_routine_width / self.cleaning_routine_strip_width)) :
             previous_pos = self.fence_frame_cleaning_routine_poses[-1].position
             strip_depth = self.cleaning_routine_depth + self.cleaning_routine_apriltag_y_offset if previous_pos.y == self.cleaning_routine_apriltag_y_offset else self.cleaning_routine_apriltag_y_offset
